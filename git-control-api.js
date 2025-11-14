@@ -56,9 +56,85 @@ module.exports = function(RED) {
         }
     }
 
+    const repoBranchMemory = new Map();
+
+    function getBranchNameFromStatus(status) {
+        if (!status || !status.current) {
+            return null;
+        }
+        const name = (typeof status.current === 'string') ? status.current.trim() : '';
+        if (!name || name === 'HEAD') {
+            return null;
+        }
+        return name;
+    }
+
+    // Helper to resolve repo path consistently (used for memoization)
+    function resolveRepoPath(inputPath) {
+        if (inputPath && typeof inputPath === 'string' && inputPath.trim() !== '') {
+            return path.resolve(inputPath);
+        }
+        return getActiveProjectPath() || process.cwd();
+    }
+
+    function rememberBranch(repoPath, branchName) {
+        if (repoPath && branchName) {
+            repoBranchMemory.set(repoPath, branchName);
+        }
+    }
+
+    function getRememberedBranch(repoPath) {
+        if (!repoPath) {
+            return null;
+        }
+        return repoBranchMemory.get(repoPath) || null;
+    }
+
+    function sanitizeCommitHash(hash) {
+        if (!hash) {
+            return null;
+        }
+        const trimmed = hash.trim();
+        if (/^[0-9a-f]{7,}$/i.test(trimmed)) {
+            return trimmed;
+        }
+        const extracted = trimmed.replace(/[^0-9a-f]/gi, '');
+        return extracted.length >= 7 ? extracted : null;
+    }
+
+    async function createBranchFromDetachedCommit(git, commitHash) {
+        const cleanHash = sanitizeCommitHash(commitHash);
+        const shortHash = cleanHash ? cleanHash.substring(0, 7) : 'detached';
+        const baseName = `from-${shortHash}`;
+        const existing = new Set();
+
+        try {
+            const branchInfo = await git.branchLocal();
+            (branchInfo.all || []).forEach(name => existing.add(name));
+        } catch (err) {
+            // If we can't list branches, log and continue - checkoutLocalBranch will throw if duplicate
+            RED.log.warn(`Git Control: failed to list local branches: ${err.message}`);
+        }
+
+        let candidate = baseName;
+        let suffix = 1;
+        const MAX_SUFFIX = 100;
+        while (existing.has(candidate) && suffix <= MAX_SUFFIX) {
+            candidate = `${baseName}-${suffix}`;
+            suffix++;
+        }
+
+        if (existing.has(candidate)) {
+            throw new Error('Unable to determine unique branch name for detached commit');
+        }
+
+        await git.checkoutLocalBranch(candidate);
+        return candidate;
+    }
+
     // Helper function to get git instance with SSH key configuration
     function getGit(repoPath) {
-        const targetPath = repoPath || getActiveProjectPath() || process.cwd();
+        const targetPath = resolveRepoPath(repoPath);
         const sshKeyPath = getSSHKeyPath();
 
         // Configure git with SSH key if available
@@ -184,15 +260,19 @@ module.exports = function(RED) {
 
                 // Get git configuration
                 const status = await git.status();
+                const currentBranch = getBranchNameFromStatus(status);
                 const remotes = await git.getRemotes(true);
                 const userConfig = await git.raw(['config', 'user.name']).catch(() => '');
                 const emailConfig = await git.raw(['config', 'user.email']).catch(() => '');
+                rememberBranch(projectPath, currentBranch);
+                const rememberedBranch = getRememberedBranch(projectPath);
 
                 const projectInfo = {
                     success: true,
                     projectName: path.basename(projectPath),
                     projectPath: projectPath,
-                    currentBranch: status.current,
+                    currentBranch: currentBranch,
+                    lastKnownBranch: rememberedBranch || null,
                     remotes: remotes,
                     user: {
                         name: userConfig.trim(),
@@ -202,7 +282,8 @@ module.exports = function(RED) {
                     tracking: status.tracking,
                     ahead: status.ahead || 0,
                     behind: status.behind || 0,
-                    isDetachedHead: !status.current  // Detached HEAD when no current branch
+                    isDetachedHead: !currentBranch,  // Detached HEAD when no current branch
+                    hasTracking: !!status.tracking
                 };
 
                 res.json(projectInfo);
@@ -221,7 +302,8 @@ module.exports = function(RED) {
         async function(req, res) {
             try {
                 const { repoPath, maxCount = 20, from, to } = req.body;
-                const git = getGit(repoPath);
+                const resolvedRepoPath = resolveRepoPath(repoPath);
+                const git = getGit(resolvedRepoPath);
                 await validateRepo(git);
 
                 const logOptions = {
@@ -241,17 +323,19 @@ module.exports = function(RED) {
 
                 // Enhance commits with graph data
                 const status = await git.status();
+                const currentBranch = getBranchNameFromStatus(status);
+                rememberBranch(resolvedRepoPath, currentBranch);
                 const headHash = await git.revparse(['HEAD']).catch(() => null);
 
                 // Detect if in detached HEAD and find the parent branch
-                const isDetachedHead = !status.current;
-                let effectiveBranch = status.current; // Current branch or null in detached HEAD
+                const isDetachedHead = !currentBranch;
+                let effectiveBranch = currentBranch || getRememberedBranch(resolvedRepoPath); // reuse last known branch when detached
 
                 // Get all branches with their commit hashes (needed for branch detection)
                 const branchList = await git.branch(['-v', '--no-abbrev']);
 
                 // If in detached HEAD, find which branch contains the current HEAD commit
-                if (isDetachedHead && headHash) {
+                if (isDetachedHead && headHash && !effectiveBranch) {
                     const commitToBranchesTemp = {};
                     Object.entries(branchList.branches).forEach(([name, info]) => {
                         // Skip remote branches for parent detection
@@ -287,6 +371,10 @@ module.exports = function(RED) {
                             console.error('Failed to find containing branches:', err);
                         }
                     }
+                }
+
+                if (effectiveBranch) {
+                    rememberBranch(resolvedRepoPath, effectiveBranch);
                 }
 
                 // Fetch commit history - use effective branch in detached HEAD to show full history
@@ -355,7 +443,7 @@ module.exports = function(RED) {
                     }
                 } catch (error) {
                     // Remote branch might not exist, that's okay
-                    console.log('[Git Control] Remote branch lookup failed:', error.message);
+                        console.log('[Git Control] Remote branch lookup failed:', error.message);
                 }
                 const commitToBranches = {};
                 Object.entries(branchList.branches).forEach(([name, info]) => {
@@ -503,10 +591,13 @@ module.exports = function(RED) {
         async function(req, res) {
             try {
                 const { repoPath } = req.body;
-                const git = getGit(repoPath);
+                const resolvedRepoPath = resolveRepoPath(repoPath);
+                const git = getGit(resolvedRepoPath);
                 await validateRepo(git);
 
                 const result = await git.status();
+                const currentBranch = getBranchNameFromStatus(result);
+                rememberBranch(resolvedRepoPath, currentBranch);
                 res.json({
                     success: true,
                     operation: 'status',
@@ -527,17 +618,20 @@ module.exports = function(RED) {
         async function(req, res) {
             try {
                 const { repoPath, targetRef } = req.body;
-                const git = getGit(repoPath);
+                const resolvedRepoPath = resolveRepoPath(repoPath);
+                const git = getGit(resolvedRepoPath);
                 await validateRepo(git);
 
                 // Get current status
                 const status = await git.status();
+                const currentBranch = getBranchNameFromStatus(status);
+                rememberBranch(resolvedRepoPath, currentBranch);
 
                 // Get current HEAD ref
                 const currentRef = await git.revparse(['HEAD']);
 
                 // Check if detached HEAD
-                const isDetachedHead = !status.current;
+                const isDetachedHead = !currentBranch;
 
                 // Check for uncommitted changes
                 const hasUncommittedChanges = status.files && status.files.length > 0;
@@ -564,7 +658,7 @@ module.exports = function(RED) {
                     isDetachedHead: isDetachedHead,
                     currentRef: currentRef,
                     targetRef: targetRef,
-                    currentBranch: status.current || 'detached HEAD'
+                    currentBranch: currentBranch || 'detached HEAD'
                 });
             } catch (error) {
                 res.status(500).json({
@@ -698,20 +792,51 @@ module.exports = function(RED) {
         }
     );
 
-    // POST /rosepetal-git/push - Push to remote
+    // POST /rosepetal-git/push - Push to remote (auto sets upstream for new branches)
     RED.httpAdmin.post("/rosepetal-git/push",
         RED.auth.needsPermission('git-control.write'),
         async function(req, res) {
             try {
                 const { repoPath } = req.body;
-                const git = getGit(repoPath);
+                const resolvedRepoPath = resolveRepoPath(repoPath);
+                const git = getGit(resolvedRepoPath);
                 await validateRepo(git);
 
-                const result = await git.push();
+                const status = await git.status();
+                const currentBranch = getBranchNameFromStatus(status);
+
+                if (!currentBranch) {
+                    throw new Error('Cannot push while in detached HEAD state');
+                }
+
+                rememberBranch(resolvedRepoPath, currentBranch);
+
+                let result;
+                let setUpstream = false;
+
+                if (status.tracking && status.tracking.includes('/')) {
+                    // Branch already tracks a remote - normal push
+                    result = await git.push();
+                } else {
+                    // No upstream tracking - set upstream automatically
+                    const remotes = await git.getRemotes(true);
+                    if (!remotes || remotes.length === 0) {
+                        throw new Error('No Git remotes configured for this repository');
+                    }
+
+                    const defaultRemote = remotes.find(r => r.name === 'origin') || remotes[0];
+                    const remoteName = defaultRemote.name;
+
+                    result = await git.push(['-u', remoteName, currentBranch]);
+                    setUpstream = true;
+                }
+
                 res.json({
                     success: true,
                     operation: 'push',
-                    result: result
+                    result: result,
+                    branch: currentBranch,
+                    setUpstream: setUpstream
                 });
             } catch (error) {
                 const errorInfo = formatGitError(error, 'push');
@@ -842,39 +967,48 @@ module.exports = function(RED) {
                     throw new Error('Commit message is required');
                 }
 
-                const git = getGit(repoPath);
+                const resolvedRepoPath = resolveRepoPath(repoPath);
+                const git = getGit(resolvedRepoPath);
                 await validateRepo(git);
 
                 // Check if in detached HEAD before committing
                 const statusBefore = await git.status();
-                const isDetachedHead = !statusBefore.current;
+                const currentBranch = getBranchNameFromStatus(statusBefore);
+                rememberBranch(resolvedRepoPath, currentBranch);
+                const isDetachedHead = !currentBranch;
 
                 // Create the commit
                 const result = await git.commit(message.trim());
+                const headHashAfterCommit = await git.revparse(['HEAD']).catch(() => result.commit);
 
                 // If was in detached HEAD, create and checkout a new branch
                 if (isDetachedHead) {
-                    // Get the commit hash we just created
-                    const newCommitHash = result.commit;
+                    const newCommitHash = headHashAfterCommit || result.commit;
+                    let branchName = null;
+                    let branchWarning = null;
 
-                    // Create branch name: "from-<short-hash>"
-                    const branchName = `from-${newCommitHash.substring(0, 7)}`;
+                    try {
+                        branchName = await createBranchFromDetachedCommit(git, newCommitHash);
+                        rememberBranch(resolvedRepoPath, branchName);
+                    } catch (branchError) {
+                        branchWarning = `Commit created, but failed to create new branch automatically: ${branchError.message}`;
+                        RED.log.warn(`[Git Control] ${branchWarning}`);
+                    }
 
-                    // Create and checkout the new branch
-                    await git.checkoutLocalBranch(branchName);
-
-                    // Return success with branch creation info
                     res.json({
                         success: true,
                         operation: 'commit',
                         commit: result.commit,
                         summary: result.summary,
                         branch: branchName,
-                        createdBranch: true,
-                        message: `Created commit and new branch '${branchName}'`
+                        createdBranch: !!branchName,
+                        warning: branchWarning || null,
+                        message: branchName
+                            ? `Created commit and new branch '${branchName}'`
+                            : 'Commit created while remaining in detached HEAD'
                     });
                 } else {
-                    // Normal commit on existing branch
+                    rememberBranch(resolvedRepoPath, currentBranch);
                     res.json({
                         success: true,
                         operation: 'commit',

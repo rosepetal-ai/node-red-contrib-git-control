@@ -295,8 +295,12 @@
 
                 // Return to latest button (detached HEAD banner)
                 $('#git-return-to-latest').on('click', function() {
-                    if (currentBranch) {
-                        executeGitOperation('checkout', { commitRef: currentBranch }, function() {
+                    var branchToRestore = null;
+                    if (projectInfo) {
+                        branchToRestore = projectInfo.currentBranch || projectInfo.lastKnownBranch;
+                    }
+                    if (branchToRestore) {
+                        executeGitOperation('checkout', { commitRef: branchToRestore }, function() {
                             reloadFlowsFromDisk(function() {
                                 loadAll();
                             });
@@ -320,11 +324,15 @@
                         if (result.success) {
                             projectInfo = result;
                             $('#git-project-name').text(result.projectName);
-                            $('#git-current-branch-name').text(result.currentBranch || 'detached HEAD');
+                            var branchLabel = result.currentBranch;
+                            if (!branchLabel) {
+                                branchLabel = result.lastKnownBranch ? 'detached (' + result.lastKnownBranch + ')' : 'detached HEAD';
+                            }
+                            $('#git-current-branch-name').text(branchLabel);
                             currentBranch = result.currentBranch;
 
                             // Update sync indicators
-                            updateSyncIndicators(result.ahead, result.behind);
+                            updateSyncIndicators(result.ahead, result.behind, result.hasTracking);
 
                             // Show/hide detached HEAD warning banner
                             if (result.isDetachedHead) {
@@ -340,7 +348,7 @@
                 });
             }
 
-            function updateSyncIndicators(ahead, behind) {
+            function updateSyncIndicators(ahead, behind, hasTracking) {
                 var $pullIndicator = $('#git-pull-indicator');
                 var $pushIndicator = $('#git-push-indicator');
                 var $pushBtn = $('#git-btn-push');
@@ -353,10 +361,17 @@
 
                 if (ahead > 0) {
                     $pushIndicator.text(ahead).show();
-                    $pushBtn.prop('disabled', false);  // Enable push button
                 } else {
                     $pushIndicator.hide();
-                    $pushBtn.prop('disabled', true);   // Disable push button
+                }
+
+                var canPush = (ahead > 0) || !hasTracking;
+                $pushBtn.prop('disabled', !canPush);
+
+                if (!hasTracking) {
+                    $pushBtn.attr('title', 'Push to publish this branch');
+                } else {
+                    $pushBtn.attr('title', 'Push to remote');
                 }
             }
 
@@ -1112,8 +1127,15 @@
             }
 
             function handlePush() {
-                // Check if there are commits to push
-                if (!projectInfo || !projectInfo.ahead || projectInfo.ahead === 0) {
+                if (!projectInfo) {
+                    RED.notify("Project info not loaded yet", "warning");
+                    return;
+                }
+
+                var hasTracking = projectInfo.hasTracking;
+                var ahead = projectInfo.ahead || 0;
+
+                if (hasTracking && ahead === 0) {
                     RED.notify("No commits to push", "warning");
                     return;
                 }
@@ -1175,14 +1197,18 @@
                     contentType: 'application/json',
                     success: function(commitResult) {
                         if (commitResult.success) {
-                            if (commitResult.createdBranch) {
-                                // Detached HEAD commit created a new branch
+                            if (commitResult.createdBranch && commitResult.branch) {
                                 RED.notify("Commit created on new branch '" + commitResult.branch + "'", "success");
                             } else {
                                 RED.notify("Commit created successfully", "success");
                             }
-                            $('#git-commit-message').val(''); // Clear the textarea
-                            loadAll(); // Reload UI to show new branch and commit
+
+                            if (commitResult.warning) {
+                                RED.notify(commitResult.warning, "warning");
+                            }
+
+                            $('#git-commit-message').val('');
+                            loadAll();
                         }
                         $btn.prop('disabled', false).find('i').removeClass('fa-spin');
                     },
