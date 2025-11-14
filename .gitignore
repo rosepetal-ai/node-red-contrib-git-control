@@ -1,2 +1,7 @@
 node_modules/
-pacakge-lock.json
+.vscode/
+package-lock.json
+
+# Development files
+CLAUDE.md
+.claude/

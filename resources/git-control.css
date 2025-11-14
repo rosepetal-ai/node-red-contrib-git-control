@@ -228,6 +228,59 @@
     white-space: nowrap;
 }
 
+/* Stage/Unstage Buttons */
+.git-stage-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background-color: transparent;
+    color: var(--red-ui-text-color-secondary, #666);
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    font-size: 12px;
+}
+
+.git-stage-btn:hover {
+    background-color: #4285f4;
+    color: white;
+}
+
+.git-stage-btn:active {
+    transform: scale(0.9);
+}
+
+/* Discard file button */
+.git-discard-file-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background-color: transparent;
+    color: var(--red-ui-text-color-secondary, #999);
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.git-discard-file-btn:hover {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.git-discard-file-btn:active {
+    transform: scale(0.9);
+}
+
 /* ==================== Commit Panel ==================== */
 
 .git-commit-panel {
@@ -236,16 +289,16 @@
 }
 
 .git-commit-form {
-    padding: 12px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 }
 
 .git-commit-message {
     width: 100%;
-    min-height: 70px;
-    padding: 8px;
+    min-height: 50px;
+    padding: 6px;
     border: 1px solid var(--red-ui-form-input-border-color, #ccc);
     border-radius: 4px;
     font-size: 13px;
@@ -271,7 +324,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 8px 12px;
     border: none;
     background-color: #4285f4;
     color: white;
@@ -311,6 +364,77 @@
     min-height: 0;
 }
 
+/* Graph Legend */
+.git-graph-legend {
+    display: flex;
+    gap: 15px;
+    margin-left: auto;
+    margin-right: 10px;
+    font-size: 11px;
+    color: var(--red-ui-text-color-subdued, #666);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.pushed {
+    background-color: #4A90E2;
+}
+
+.legend-dot.unpushed {
+    background-color: #9B59B6;
+}
+
+.legend-dot.head {
+    background-color: #27AE60;
+}
+
+/* Graph Container */
+.git-graph-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 200px;
+    position: relative;
+    background-color: #f6f8fa;  /* Light gray for better card visibility */
+}
+
+#git-graph-canvas {
+    display: block;
+    width: 100%;
+}
+
+/* Graph Tooltip */
+.git-graph-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    max-width: 300px;
+    word-wrap: break-word;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.git-graph-tooltip strong {
+    font-family: monospace;
+    color: #4A90E2;
+}
+
+/* Legacy commit list styles (kept for backwards compatibility) */
 .git-commits-list {
     flex: 1;
     overflow-y: auto;
@@ -372,22 +496,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 16px 12px;
     text-align: center;
     color: #999;
 }
 
 .git-empty-state i,
 .git-loading-state i {
-    font-size: 32px;
-    margin-bottom: 12px;
+    font-size: 18px;
+    margin-bottom: 4px;
     opacity: 0.5;
 }
 
 .git-empty-state p,
 .git-loading-state p {
     margin: 0;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .git-empty-state i {
@@ -726,6 +850,143 @@ body.red-ui-theme-midnight .git-discard-btn {
 
 body.red-ui-theme-midnight .git-discard-btn:hover {
     background-color: #3d1e1e !important;
+}
+
+/* ==================== Warning Banner ==================== */
+
+.git-warning-banner {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #ffc107;
+    border-left: 4px solid #ff9800;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.git-warning-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.git-warning-content > i {
+    color: #ff9800;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.git-warning-text {
+    flex: 1;
+}
+
+.git-warning-text strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.git-warning-text p {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.git-warning-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.git-warning-action:hover {
+    background-color: #f57c00;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.git-warning-action:active {
+    transform: translateY(0);
+}
+
+/* ==================== Error Modal Styles ==================== */
+
+.git-modal-header-error {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-bottom: 2px solid #e53935;
+}
+
+.git-modal-header-error i {
+    color: #e53935;
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+.git-modal-header-error h4 {
+    color: #c62828;
+}
+
+.git-blocking-hint {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+    margin: 4px 0 12px 0;
+}
+
+#git-blocking-message {
+    margin-bottom: 16px;
+}
+
+#git-blocking-message p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+#git-blocking-message i {
+    margin-right: 8px;
+    color: #666;
+}
+
+#git-blocking-message strong {
+    color: #333;
+    font-weight: 600;
+}
+
+/* ==================== Action Button Variants ==================== */
+
+.git-action-btn.git-action-primary {
+    background-color: #4285f4;
+    color: white;
+}
+
+.git-action-btn.git-action-primary:hover {
+    background-color: #3367d6;
+}
+
+.git-action-btn.git-action-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.git-action-btn.git-action-danger:hover {
+    background-color: #c82333;
 }
 
 /* ==================== Responsive Design ==================== */

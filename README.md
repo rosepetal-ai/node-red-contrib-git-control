@@ -1,23 +1,22 @@
 # node-red-contrib-rosepetal-git-control
 
-Advanced Git control **sidebar plugin** for Node-RED with support for reset, revert, checkout, history viewing, and many other Git operations - all accessible from a convenient sidebar panel!
+Advanced Git control **sidebar plugin** for Node-RED with support for reset, checkout, history viewing, committing, and remote synchronization - all accessible from a convenient sidebar panel!
 
 ## Features
 
 ✨ **Sidebar Panel Integration** - Always accessible from Node-RED's right sidebar, no need to create flows!
 
-✨ **11 Git Operations Supported:**
-- 📜 **View History (log)** - Browse commit history with filtering
+✨ **Core Git Operations:**
+- 📜 **View History (log)** - Browse commit history with pagination
 - ↩️ **Reset** - Go back to specific commits (soft/mixed/hard)
-- 🔄 **Revert** - Safely undo commits by creating new commits
 - 🔀 **Checkout** - Switch to specific commits or branches
 - 🔍 **Show** - View detailed commit information
-- 📊 **Diff** - Compare commits and changes
-- 📋 **Status** - Enhanced repository status
-- 📖 **Reflog** - View reference logs (recover lost commits)
-- 🏷️ **Tag** - Create, list, and delete tags
-- 🌿 **Branches** - List all branches
-- 💾 **Stash** - Save, list, apply, and pop stashed changes
+- 📋 **Status** - Enhanced repository status with file changes
+- 🌿 **Branches** - List and switch between branches
+- 💾 **Commit** - Stage all changes and create commits
+- ⬇️ **Pull** - Pull changes from remote repository
+- ⬆️ **Push** - Push commits to remote repository
+- 🔄 **Fetch** - Fetch updates from remote without merging
 
 🛡️ **Safety Features:**
 - Safe mode to prevent destructive operations
@@ -45,14 +44,14 @@ npm install node-red-contrib-rosepetal-git-control
 
 ```bash
 # Navigate to the plugin directory
-cd /home/rosepetal-laptop-nil/Desktop/node-red-contrib-rosepetal-git-control
+cd node-red-contrib-rosepetal-git-control
 
 # Install dependencies
 npm install
 
 # Link to Node-RED
 cd ~/.node-red
-npm install /home/rosepetal-laptop-nil/Desktop/node-red-contrib-rosepetal-git-control
+npm install /path/to/node-red-contrib-rosepetal-git-control
 
 # Restart Node-RED
 node-red-restart
@@ -107,11 +106,11 @@ The sidebar panel contains:
 
 ⚠️ **Warning:** Hard reset permanently discards changes!
 
-#### Safely Undo Last Commit
-1. Select "Revert Commit"
-2. Enter commit reference: `HEAD`
-3. Click "Execute"
-4. A new commit is created that undoes the changes (non-destructive)
+#### Create a Commit
+1. Make changes to your flows
+2. Enter commit message in the text area
+3. Click "Stage All & Commit" button
+4. Changes are staged and committed automatically
 
 #### Switch to Different Branch
 1. Select "Checkout Commit/Branch"
@@ -119,41 +118,40 @@ The sidebar panel contains:
 3. Click "Execute"
 
 #### View All Branches
-1. Click "Branches" quick action button
-2. See all branches with current branch highlighted
+1. Use the branch selector dropdown
+2. See all branches with current branch selected
+3. Click to switch branches
 
-#### Recover Lost Commits
-1. Select "Reference Log" from operations
-2. Click "Execute"
-3. View all HEAD movements with commit hashes
-4. Use hash to checkout or reset if needed
+#### Push/Pull Changes
+1. Click "Fetch" to check for remote updates
+2. Click "Pull" to download and merge changes
+3. Click "Push" to upload your commits to remote
+4. Sync indicators show commits ahead/behind
 
 ### Operations Reference
 
-| Operation | Description | Required Fields | Safe Mode |
-|-----------|-------------|-----------------|-----------|
-| **log** | View commit history | Max Commits | ✓ |
-| **reset** | Reset to commit | Commit Ref, Reset Mode | Blocks hard reset |
-| **revert** | Revert commit | Commit Ref | ✓ |
-| **checkout** | Checkout commit/branch | Commit/Branch Ref | ✓ |
-| **show** | Show commit details | Commit Ref | ✓ |
-| **diff** | Show differences | (Optional: Commit Range) | ✓ |
-| **status** | Repository status | None | ✓ |
-| **reflog** | Reference log | None | ✓ |
-| **tags** | Tag operations | Tag Action, (Tag Name) | ✓ |
-| **branches** | List branches | None | ✓ |
-| **stash** | Stash operations | Stash Action, (Stash Ref) | ✓ |
+| Operation | Description | UI Location | Safe Mode |
+|-----------|-------------|-------------|-----------|
+| **log** | View commit history | Commits section (auto-loads 50) | ✓ |
+| **status** | Repository status | Changes section (auto-refresh) | ✓ |
+| **branches** | List and switch branches | Branch selector dropdown | ✓ |
+| **checkout** | Checkout commits | Click commit → Checkout action | ✓ |
+| **reset** | Reset to commit | Click commit → Reset (Hard) action | Requires confirmation |
+| **show** | Show commit details | Click commit → View details action | ✓ |
+| **commit** | Create commit | Commit panel with message textarea | ✓ |
+| **add** | Stage files | Automatic with "Stage All & Commit" | ✓ |
+| **fetch** | Fetch from remote | Toolbar fetch button | ✓ |
+| **pull** | Pull from remote | Toolbar pull button | ✓ |
+| **push** | Push to remote | Toolbar push button | ✓ |
 
 ### Commit References
 
-You can use these reference formats:
+You can use these reference formats when checking out or resetting:
 - `HEAD` - Current commit
 - `HEAD~1` - One commit before HEAD
 - `HEAD~5` - Five commits before HEAD
-- `abc123...` - Commit hash (full or short)
+- `abc123...` - Commit hash (full or short, click commits to copy hash)
 - `main` - Branch name
-- `v1.0.0` - Tag name
-- `HEAD~1..HEAD` - Commit range (for diff)
 
 ## Safety and Best Practices
 
@@ -173,19 +171,19 @@ Disable only when you understand the consequences!
 
 **Best Practices:**
 1. ✅ Always check status before destructive operations
-2. ✅ Use stash to save work-in-progress
-3. ✅ Prefer revert over reset when possible
+2. ✅ Commit your work before switching branches or resetting
+3. ✅ Use soft reset instead of hard reset when possible
 4. ✅ Keep Safe Mode enabled during development
 5. ✅ Test operations in a non-production repository first
-6. ✅ Use reflog to recover from mistakes
+6. ✅ Pull before pushing to avoid conflicts
 
 ### Recovery
 
 If you make a mistake:
-1. Open "Reference Log" operation
-2. Find the commit hash before your mistake
-3. Use "Reset to Commit" (soft mode) to go back
-4. Your changes will be preserved!
+1. Check commit history to find the commit before your mistake
+2. Click on that commit to open actions modal
+3. Use "Reset (Hard)" to go back (⚠️ Warning: loses uncommitted changes)
+4. Or use soft reset via Git command line to preserve changes
 
 ## Troubleshooting
 
@@ -239,14 +237,14 @@ node-red-contrib-rosepetal-git-control/
 ### Local Development
 ```bash
 # Clone or navigate to repository
-cd /home/rosepetal-laptop-nil/Desktop/node-red-contrib-rosepetal-git-control
+cd node-red-contrib-rosepetal-git-control
 
 # Install dependencies
 npm install
 
 # Link for local development
 cd ~/.node-red
-npm install /home/rosepetal-laptop-nil/Desktop/node-red-contrib-rosepetal-git-control
+npm install /path/to/node-red-contrib-rosepetal-git-control
 
 # Make changes to code
 # Restart Node-RED to see changes
@@ -264,19 +262,32 @@ node-red-restart
 
 The plugin registers these HTTP Admin API endpoints:
 
-- `POST /rosepetal-git/log` - Get commit history
-- `POST /rosepetal-git/reset` - Reset to commit
-- `POST /rosepetal-git/revert` - Revert commit
-- `POST /rosepetal-git/checkout` - Checkout commit/branch
-- `POST /rosepetal-git/status` - Get status
-- `POST /rosepetal-git/reflog` - Get reflog
-- `POST /rosepetal-git/branches` - List branches
-- `POST /rosepetal-git/tags` - Tag operations
-- `POST /rosepetal-git/stash` - Stash operations
-- `POST /rosepetal-git/show` - Show commit
-- `POST /rosepetal-git/diff` - Show diff
+**Project Information:**
+- `GET /rosepetal-git/project-info` - Get active project info, branch, remotes, sync status
 
-All endpoints require authentication and return JSON responses.
+**Repository Operations:**
+- `POST /rosepetal-git/log` - Get commit history with pagination
+- `POST /rosepetal-git/status` - Get repository status and file changes
+- `POST /rosepetal-git/branches` - List all branches
+- `POST /rosepetal-git/show` - Show commit details and diff
+
+**Branch Operations:**
+- `POST /rosepetal-git/checkout` - Checkout commit or branch
+
+**Commit Operations:**
+- `POST /rosepetal-git/add` - Stage files for commit
+- `POST /rosepetal-git/commit` - Create commit with message
+- `POST /rosepetal-git/reset` - Reset to specific commit (soft/mixed/hard)
+
+**Remote Operations:**
+- `POST /rosepetal-git/fetch` - Fetch from remote
+- `POST /rosepetal-git/pull` - Pull changes from remote
+- `POST /rosepetal-git/push` - Push commits to remote
+
+**Flow Synchronization:**
+- `POST /rosepetal-git/read-flows` - Read flows.json from disk (for flow reload)
+
+All endpoints require Node-RED authentication and return JSON responses.
 
 ## Dependencies
 
@@ -304,7 +315,7 @@ RosePetal
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/rosepetal/node-red-contrib-rosepetal-git-control/issues)
+- **Issues**: [GitHub Issues](https://github.com/rosepetal-ai/node-red-contrib-rosepetal-git-control/issues)
 - **Node-RED**: [Node-RED Forum](https://discourse.nodered.org/)
 - **Git Documentation**: [git-scm.com](https://git-scm.com/docs)
 
@@ -312,16 +323,19 @@ RosePetal
 
 ### Version 1.0.0
 - Initial release as sidebar plugin
-- 11 Git operations supported
+- Core Git operations: log, status, checkout, reset, show, commit, add
+- Remote operations: fetch, pull, push with sync indicators
+- Branch management: list and switch branches
 - Safe mode for destructive operations
-- Comprehensive error handling
-- User-friendly sidebar interface
-- Quick action buttons
-- Real-time results display
+- Flow synchronization after Git operations
+- Node-RED project integration with SSH key support
+- User-friendly sidebar interface with auto-refresh
+- Commit modal with checkout and reset actions
+- Real-time status updates every 5 seconds
 
 ## Keywords
 
-node-red, git, version-control, git-control, sidebar, plugin, reset, revert, checkout, commit, history, reflog, branches, tags, stash
+node-red, git, version-control, git-control, sidebar, plugin, reset, checkout, commit, history, branches, push, pull, fetch
 
 ---
 

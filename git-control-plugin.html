@@ -34,6 +34,21 @@
                         </div>
                     </div>
 
+                    <!-- Detached HEAD Warning Banner -->
+                    <div class="git-warning-banner" id="git-detached-head-banner" style="display: none;">
+                        <div class="git-warning-content">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <div class="git-warning-text">
+                                <strong>DETACHED HEAD</strong>
+                                <p>You're viewing an old commit. Creating commits here will rewrite history when pushed.</p>
+                            </div>
+                        </div>
+                        <button class="git-warning-action" id="git-return-to-latest">
+                            <i class="fa fa-undo"></i>
+                            <span>Return to Latest</span>
+                        </button>
+                    </div>
+
                     <!-- Branch Section -->
                     <div class="git-branch-section">
                         <div class="git-branch-current">
@@ -45,22 +60,31 @@
                         </select>
                     </div>
 
-                    <!-- Changed Files Section -->
-                    <div class="git-changes-section" id="git-changes-section">
-                        <div class="git-section-header" id="git-changes-header">
+                    <!-- Unstaged Changes Section -->
+                    <div class="git-changes-section" id="git-unstaged-section">
+                        <div class="git-section-header">
                             <i class="fa fa-file-o"></i>
                             <span>Changes</span>
-                            <span class="git-badge" id="git-changes-count">0</span>
-                            <button class="git-btn-icon git-discard-btn" id="git-btn-discard-changes"
-                                    title="Discard all changes" style="display: none;">
-                                <i class="fa fa-trash"></i>
+                            <span class="git-badge" id="git-unstaged-count">0</span>
+                            <button class="git-btn-icon" id="git-btn-stage-all" title="Stage All Changes">
+                                <i class="fa fa-plus"></i>
                             </button>
                         </div>
-                        <div class="git-changes-list" id="git-changes-list">
-                            <div class="git-empty-state">
-                                <i class="fa fa-check-circle"></i>
-                                <p>No changes</p>
-                            </div>
+                        <div class="git-changes-list" id="git-unstaged-list">
+                        </div>
+                    </div>
+
+                    <!-- Staged Changes Section -->
+                    <div class="git-changes-section" id="git-staged-section">
+                        <div class="git-section-header">
+                            <i class="fa fa-check"></i>
+                            <span>Staged Changes</span>
+                            <span class="git-badge" id="git-staged-count">0</span>
+                            <button class="git-btn-icon" id="git-btn-unstage-all" title="Unstage All Changes">
+                                <i class="fa fa-minus"></i>
+                            </button>
+                        </div>
+                        <div class="git-changes-list" id="git-staged-list">
                         </div>
                     </div>
 
@@ -77,9 +101,9 @@
                                 placeholder="Enter commit message..."
                                 rows="3"
                             ></textarea>
-                            <button class="git-primary-btn" id="git-btn-commit">
+                            <button class="git-primary-btn" id="git-btn-commit" disabled>
                                 <i class="fa fa-check"></i>
-                                <span>Stage All & Commit</span>
+                                <span>Commit</span>
                             </button>
                         </div>
                     </div>
@@ -88,16 +112,28 @@
                     <div class="git-commits-section">
                         <div class="git-section-header">
                             <i class="fa fa-history"></i>
-                            <span>Recent Commits</span>
-                            <button class="git-btn-icon" id="git-load-more-commits" title="Load more commits">
-                                <i class="fa fa-ellipsis-h"></i>
-                            </button>
+                            <span>Commit Graph</span>
+                            <div class="git-graph-legend">
+                                <span class="legend-item">
+                                    <span class="legend-dot pushed"></span> Pushed
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-dot unpushed"></span> Unpushed
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-dot head"></span> HEAD
+                                </span>
+                            </div>
                         </div>
-                        <div class="git-commits-list" id="git-commits-list">
-                            <div class="git-loading-state">
+                        <div class="git-graph-container" id="git-graph-container">
+                            <!-- Loading state -->
+                            <div class="git-loading-state" id="git-commits-loading" style="display: none;">
                                 <i class="fa fa-spinner fa-spin"></i>
                                 <p>Loading commits...</p>
                             </div>
+
+                            <canvas id="git-graph-canvas"></canvas>
+                            <div id="git-graph-tooltip" class="git-graph-tooltip" style="display: none;"></div>
                         </div>
                     </div>
 
@@ -106,7 +142,7 @@
                         <div class="git-modal-overlay" id="git-modal-overlay"></div>
                         <div class="git-modal-content">
                             <div class="git-modal-header">
-                                <h4>Commit Actions</h4>
+                                <h4>Switch to Commit</h4>
                                 <button class="git-modal-close" id="git-modal-close">
                                     <i class="fa fa-times"></i>
                                 </button>
@@ -114,19 +150,29 @@
                             <div class="git-modal-body">
                                 <div class="git-commit-details" id="git-modal-commit-details"></div>
                                 <div class="git-modal-actions">
-                                    <button class="git-action-btn" id="git-action-checkout">
-                                        <i class="fa fa-sign-out"></i>
-                                        <span>Checkout to this commit</span>
-                                    </button>
-                                    <button class="git-action-btn" id="git-action-view-details">
-                                        <i class="fa fa-info-circle"></i>
-                                        <span>View full details</span>
-                                    </button>
-                                    <button class="git-action-btn git-action-danger" id="git-action-reset-hard">
-                                        <i class="fa fa-exclamation-triangle"></i>
-                                        <span>Reset (Hard) - Discard all changes</span>
+                                    <button class="git-action-btn git-action-primary" id="git-action-checkout">
+                                        <i class="fa fa-code-fork"></i>
+                                        <span>Switch to this commit</span>
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blocking Error Modal -->
+                    <div class="git-modal" id="git-blocking-modal" style="display: none;">
+                        <div class="git-modal-overlay" id="git-blocking-overlay"></div>
+                        <div class="git-modal-content">
+                            <div class="git-modal-header git-modal-header-error">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                <h4 id="git-blocking-title">Cannot Switch Commit</h4>
+                                <button class="git-modal-close" id="git-blocking-close">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="git-modal-body">
+                                <div id="git-blocking-message"></div>
+                                <div class="git-modal-actions" id="git-blocking-actions"></div>
                             </div>
                         </div>
                     </div>
@@ -152,9 +198,13 @@
             var currentBranch = '';
             var projectInfo = null;
 
-            // Register keyboard shortcut
+            // Register keyboard shortcut and tab visibility handler
             RED.actions.add("core:show-git-control-tab", function() {
                 RED.sidebar.show("rosepetal-git-control");
+                // Reload commits when tab becomes visible (canvas needs visible container for proper dimensions)
+                setTimeout(function() {
+                    loadCommits(50);
+                }, 100);
             });
 
             // Add sidebar tab
@@ -171,13 +221,35 @@
             // Initialize UI handlers AFTER sidebar is added to DOM
             setupEventHandlers();
 
-            // Load initial data
-            loadAll();
+            // Load initial data (everything except commits - commits need visible tab)
+            loadProjectInfo();
+            loadBranches();
+            loadChanges();
 
-            // Auto-refresh every 5 seconds to detect repository changes
-            setInterval(function() {
-                loadAll();
-            }, 5000);
+            // Try to load commits when container is ready (retry until visible or max attempts)
+            var loadCommitsAttempts = 0;
+            var maxLoadAttempts = 20; // Try for up to 2 seconds
+            var loadCommitsInterval = setInterval(function() {
+                var $container = $('#git-graph-container');
+                var width = $container.width();
+                var visible = $container.is(':visible');
+                loadCommitsAttempts++;
+
+                console.log('[Git Control] Attempt', loadCommitsAttempts, '- visible:', visible, 'width:', width);
+
+                // If container is visible and has width, load commits and stop trying
+                if (visible && width > 0) {
+                    clearInterval(loadCommitsInterval);
+                    console.log('[Git Control] Loading commits - container ready');
+                    loadCommits(50);
+                }
+
+                // Give up after max attempts
+                if (loadCommitsAttempts >= maxLoadAttempts) {
+                    clearInterval(loadCommitsInterval);
+                    console.log('[Git Control] Gave up loading commits - container not ready');
+                }
+            }, 100);
 
             // Listen to Node-RED deploy events to refresh immediately
             RED.events.on("deploy", function() {
@@ -200,23 +272,36 @@
                 // Commit button
                 $('#git-btn-commit').on('click', handleCommit);
 
+                // Stage/unstage all buttons
+                $('#git-btn-stage-all').on('click', stageAll);
+                $('#git-btn-unstage-all').on('click', unstageAll);
+
                 // Discard changes button
                 $('#git-btn-discard-changes').on('click', handleDiscardChanges);
-
-                // Load more commits
-                $('#git-load-more-commits').on('click', function() {
-                    loadCommits(allCommits.length + 20);
-                });
 
                 // Modal handlers
                 $('#git-modal-close, #git-modal-overlay').on('click', closeModal);
                 $('#git-action-checkout').on('click', function() { handleCommitAction('checkout'); });
-                $('#git-action-view-details').on('click', function() { handleCommitAction('details'); });
-                $('#git-action-reset-hard').on('click', function() { handleCommitAction('reset', 'hard'); });
 
                 // Details panel close
                 $('#git-details-close').on('click', function() {
                     $('#git-details-panel').fadeOut(200);
+                });
+
+                // Blocking modal close
+                $('#git-blocking-close, #git-blocking-overlay').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                });
+
+                // Return to latest button (detached HEAD banner)
+                $('#git-return-to-latest').on('click', function() {
+                    if (currentBranch) {
+                        executeGitOperation('checkout', { commitRef: currentBranch }, function() {
+                            reloadFlowsFromDisk(function() {
+                                loadAll();
+                            });
+                        });
+                    }
                 });
             }
 
@@ -235,11 +320,18 @@
                         if (result.success) {
                             projectInfo = result;
                             $('#git-project-name').text(result.projectName);
-                            $('#git-current-branch-name').text(result.currentBranch);
+                            $('#git-current-branch-name').text(result.currentBranch || 'detached HEAD');
                             currentBranch = result.currentBranch;
 
                             // Update sync indicators
                             updateSyncIndicators(result.ahead, result.behind);
+
+                            // Show/hide detached HEAD warning banner
+                            if (result.isDetachedHead) {
+                                $('#git-detached-head-banner').slideDown(200);
+                            } else {
+                                $('#git-detached-head-banner').slideUp(200);
+                            }
                         }
                     },
                     error: function(xhr) {
@@ -251,6 +343,7 @@
             function updateSyncIndicators(ahead, behind) {
                 var $pullIndicator = $('#git-pull-indicator');
                 var $pushIndicator = $('#git-push-indicator');
+                var $pushBtn = $('#git-btn-push');
 
                 if (behind > 0) {
                     $pullIndicator.text(behind).show();
@@ -260,8 +353,10 @@
 
                 if (ahead > 0) {
                     $pushIndicator.text(ahead).show();
+                    $pushBtn.prop('disabled', false);  // Enable push button
                 } else {
                     $pushIndicator.hide();
+                    $pushBtn.prop('disabled', true);   // Disable push button
                 }
             }
 
@@ -291,7 +386,9 @@
             }
 
             function loadCommits(maxCount) {
-                $('#git-commits-list').html('<div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading commits...</p></div>');
+                // Show loading state
+                $('#git-commits-loading').show();
+                $('#git-graph-canvas').hide();
 
                 $.ajax({
                     url: 'rosepetal-git/log',
@@ -299,44 +396,353 @@
                     data: JSON.stringify({ maxCount: maxCount || 50 }),
                     contentType: 'application/json',
                     success: function(result) {
+                        // Hide loading state
+                        $('#git-commits-loading').hide();
+                        $('#git-graph-canvas').show();
+
                         if (result.success) {
                             allCommits = result.commits;
-                            renderCommits(result.commits);
+                            renderCommitGraph(result.commits);
                         }
                     },
                     error: function(xhr) {
-                        $('#git-commits-list').html('<div class="git-empty-state"><i class="fa fa-exclamation-triangle"></i><p>Failed to load commits</p></div>');
+                        // Hide loading and show error
+                        $('#git-commits-loading').hide();
+                        var $container = $('#git-graph-container');
+                        $container.find('canvas, .git-graph-tooltip').remove();
+                        $container.append('<div class="git-empty-state"><i class="fa fa-exclamation-triangle"></i><p>Failed to load commits</p></div>');
                     }
                 });
             }
 
-            function renderCommits(commits) {
-                var $list = $('#git-commits-list');
-                $list.empty();
+            function renderCommitGraph(commits) {
+                var $container = $('#git-graph-container');
 
                 if (commits.length === 0) {
-                    $list.html('<div class="git-empty-state"><i class="fa fa-info-circle"></i><p>No commits</p></div>');
+                    // Hide loading and remove canvas/tooltip, show empty state
+                    $('#git-commits-loading').hide();
+                    $container.find('canvas, .git-graph-tooltip').remove();
+                    if ($container.find('.git-empty-state').length === 0) {
+                        $container.append('<div class="git-empty-state"><i class="fa fa-info-circle"></i><p>No commits</p></div>');
+                    }
                     return;
                 }
 
-                commits.forEach(function(commit) {
-                    var $item = $('<div class="git-commit-item">');
-                    $item.attr('data-hash', commit.hash);
+                // Remove any empty state
+                $container.find('.git-empty-state').remove();
 
-                    var html = '<div class="git-commit-header">';
-                    html += '<span class="git-commit-hash">' + commit.hash.substring(0, 7) + '</span>';
-                    html += '<span class="git-commit-time">' + getRelativeTime(commit.date) + '</span>';
-                    html += '</div>';
-                    html += '<div class="git-commit-message">' + $('<div>').text(commit.message).html() + '</div>';
-                    html += '<div class="git-commit-author">' + commit.author + '</div>';
+                // Recreate canvas and tooltip if they don't exist
+                if ($container.find('canvas').length === 0) {
+                    $container.append('<canvas id="git-graph-canvas"></canvas>');
+                }
+                if ($container.find('.git-graph-tooltip').length === 0) {
+                    $container.append('<div id="git-graph-tooltip" class="git-graph-tooltip" style="display: none;"></div>');
+                }
 
-                    $item.html(html);
-                    $item.on('click', function() {
-                        openCommitModal(commit);
+                var canvas = document.getElementById('git-graph-canvas');
+                var ctx = canvas.getContext('2d');
+                var tooltip = $('#git-graph-tooltip');
+
+                // Ensure canvas is visible and loading is hidden
+                $('#git-graph-canvas').show();
+                $('#git-commits-loading').hide();
+
+                // Layout constants
+                var ROW_HEIGHT = 75;  // Increased for card spacing
+                var GRAPH_WIDTH = 100;  // Width for graph visualization
+                var NODE_RADIUS = 6;
+                var LINE_WIDTH = 2;
+                var CARD_HEIGHT = 65;
+                var CARD_PADDING = 5;
+
+                // Calculate canvas size
+                var containerWidth = $container.width();
+                var canvasHeight = commits.length * ROW_HEIGHT + 40;
+
+                // Set canvas size (use device pixel ratio for crisp rendering)
+                var dpr = window.devicePixelRatio || 1;
+                canvas.width = containerWidth * dpr;
+                canvas.height = canvasHeight * dpr;
+                canvas.style.width = containerWidth + 'px';
+                canvas.style.height = canvasHeight + 'px';
+                ctx.scale(dpr, dpr);
+
+                // Calculate graph layout (assign column positions to commits)
+                var layout = calculateGraphLayout(commits);
+
+                // Track hover state for visual feedback
+                var hoveredCommitIndex = -1;
+
+                // Function to render visible commits only
+                function renderVisibleCommits(hoverIndex) {
+                    // Get viewport bounds
+                    var scrollTop = $container.scrollTop();
+                    var viewportHeight = $container.height();
+                    var visibleStart = Math.max(0, Math.floor((scrollTop - ROW_HEIGHT) / ROW_HEIGHT));
+                    var visibleEnd = Math.min(commits.length, Math.ceil((scrollTop + viewportHeight + ROW_HEIGHT) / ROW_HEIGHT));
+
+                    // Clear canvas
+                    ctx.clearRect(0, 0, containerWidth, canvasHeight);
+
+                    // Draw commit cards first (background layer)
+                    for (var i = visibleStart; i < visibleEnd; i++) {
+                        var y = i * ROW_HEIGHT + 37;
+                        var isHovered = (hoverIndex !== undefined ? hoverIndex : hoveredCommitIndex) === i;
+                        drawCommitCard(ctx, y, containerWidth, isHovered);
+                    }
+
+                    // Draw connections for visible commits
+                    for (var i = visibleStart; i < visibleEnd; i++) {
+                        var commit = commits[i];
+                        var y = i * ROW_HEIGHT + 37;
+                        var x = GRAPH_WIDTH / 2 + layout[commit.hash].column * 20;
+
+                        // Draw lines to parent commits
+                        commit.parents.forEach(function(parentHash) {
+                            var parentIndex = commits.findIndex(function(c) { return c.hash === parentHash; });
+                            if (parentIndex !== -1) {
+                                var parentY = parentIndex * ROW_HEIGHT + 37;
+                                var parentX = GRAPH_WIDTH / 2 + layout[parentHash].column * 20;
+                                drawConnection(ctx, x, y, parentX, parentY);
+                            }
+                        });
+                    }
+
+                    // Draw commit nodes and info for visible commits
+                    for (var i = visibleStart; i < visibleEnd; i++) {
+                        var commit = commits[i];
+                        var y = i * ROW_HEIGHT + 37;
+                        var x = GRAPH_WIDTH / 2 + layout[commit.hash].column * 20;
+
+                        // Determine node color
+                        var color = getCommitColor(commit);
+
+                        // Draw commit node - HEAD gets green center and is bigger
+                        var centerColor = commit.isHead ? '#27AE60' : null;
+                        var radius = commit.isHead ? NODE_RADIUS * 1.5 : NODE_RADIUS;  // HEAD is 50% bigger
+                        drawCommitNode(ctx, x, y, radius, color, centerColor);
+
+                        // Draw commit info (hash, message, author, time)
+                        ctx.fillStyle = '#333';
+                        ctx.font = '12px monospace';
+                        var hashText = commit.hash.substring(0, 7);
+                        ctx.fillText(hashText, GRAPH_WIDTH + 10, y - 15);
+
+                        ctx.font = '13px sans-serif';
+                        var messageText = commit.message.length > 50 ? commit.message.substring(0, 47) + '...' : commit.message;
+                        ctx.fillText(messageText, GRAPH_WIDTH + 10, y + 2);
+
+                        ctx.font = '11px sans-serif';
+                        ctx.fillStyle = '#666';
+                        var authorTime = commit.author + ' • ' + getRelativeTime(commit.date);
+                        ctx.fillText(authorTime, GRAPH_WIDTH + 10, y + 18);
+
+                        // Draw branch labels if any - positioned at top-right of card
+                        if (commit.branches && commit.branches.length > 0) {
+                            ctx.font = 'bold 10px sans-serif';
+
+                            // Calculate total width of all branch labels
+                            var totalBranchWidth = 0;
+                            commit.branches.forEach(function(branch) {
+                                totalBranchWidth += ctx.measureText(branch).width + 12 + 5;  // width + padding + spacing
+                            });
+
+                            // Position from right edge of card
+                            var cardWidth = containerWidth - 10;
+                            var branchX = cardWidth - totalBranchWidth + 5;  // Start position (from right)
+                            var branchY = y - 29;  // Top of the card with small padding
+
+                            commit.branches.forEach(function(branch) {
+                                var branchWidth = ctx.measureText(branch).width + 12;
+                                ctx.fillStyle = '#2196F3';
+                                ctx.fillRect(branchX, branchY, branchWidth, 16);
+                                ctx.fillStyle = '#fff';
+                                ctx.fillText(branch, branchX + 6, branchY + 11);
+                                branchX += branchWidth + 5;
+                            });
+                        }
+                    }
+                }
+
+                // Initial render
+                renderVisibleCommits();
+
+                // Debounced scroll handler for smooth performance
+                var scrollTimeout;
+                $container.off('scroll').on('scroll', function() {
+                    if (scrollTimeout) {
+                        clearTimeout(scrollTimeout);
+                    }
+                    scrollTimeout = setTimeout(function() {
+                        renderVisibleCommits();
+                    }, 16); // ~60fps
+                });
+
+                // Add click handler for canvas - click anywhere on card
+                $(canvas).off('click').on('click', function(e) {
+                    var rect = canvas.getBoundingClientRect();
+                    var clickX = e.clientX - rect.left;
+                    var clickY = e.clientY - rect.top;
+                    var scrollTop = $container.scrollTop();
+
+                    // Check if click is on any commit card
+                    commits.forEach(function(commit, index) {
+                        var cardY = index * ROW_HEIGHT + 37;
+                        var cardTop = cardY - 35;
+                        var cardBottom = cardY + 30;
+                        var clickYAbsolute = clickY + scrollTop;
+
+                        // Check if click is within card boundaries
+                        if (clickYAbsolute >= cardTop && clickYAbsolute <= cardBottom) {
+                            openCommitModal(commit);
+                        }
+                    });
+                });
+
+                // Add hover handler for visual feedback
+                $(canvas).off('mousemove').on('mousemove', function(e) {
+                    var rect = canvas.getBoundingClientRect();
+                    var hoverX = e.clientX - rect.left;
+                    var hoverY = e.clientY - rect.top;
+                    var scrollTop = $container.scrollTop();
+
+                    var newHoveredIndex = -1;
+                    var hoveredCommit = null;
+
+                    commits.forEach(function(commit, index) {
+                        var cardY = index * ROW_HEIGHT + 37;
+                        var cardTop = cardY - 35;
+                        var cardBottom = cardY + 30;
+                        var hoverYAbsolute = hoverY + scrollTop;
+
+                        // Check if hover is within card boundaries
+                        if (hoverYAbsolute >= cardTop && hoverYAbsolute <= cardBottom) {
+                            newHoveredIndex = index;
+                            hoveredCommit = commit;
+                        }
                     });
 
-                    $list.append($item);
+                    // Update hover state if changed
+                    if (newHoveredIndex !== hoveredCommitIndex) {
+                        hoveredCommitIndex = newHoveredIndex;
+                        renderVisibleCommits(hoveredCommitIndex);
+                    }
+
+                    // Show tooltip on hover
+                    if (hoveredCommit) {
+                        tooltip.html('<strong>' + hoveredCommit.hash.substring(0, 7) + '</strong><br>' + hoveredCommit.message);
+                        tooltip.css({
+                            display: 'block',
+                            left: (e.clientX - rect.left + 15) + 'px',
+                            top: (e.clientY - rect.top + 15) + 'px'
+                        });
+                        $(canvas).css('cursor', 'pointer');
+                    } else {
+                        tooltip.hide();
+                        $(canvas).css('cursor', 'default');
+                    }
                 });
+
+                $(canvas).off('mouseleave').on('mouseleave', function() {
+                    tooltip.hide();
+                    hoveredCommitIndex = -1;
+                    renderVisibleCommits();
+                });
+            }
+
+            function calculateGraphLayout(commits) {
+                // Simple layout: assign column 0 to all commits (linear graph)
+                // Future enhancement: handle branches with multiple columns
+                var layout = {};
+                commits.forEach(function(commit) {
+                    layout[commit.hash] = { column: 0 };
+                });
+                return layout;
+            }
+
+            function drawConnection(ctx, fromX, fromY, toX, toY) {
+                ctx.strokeStyle = '#95A5A6';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+            }
+
+            function drawCommitNode(ctx, x, y, radius, color, centerColor) {
+                // Draw outer circle
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Draw inner circle (white)
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(x, y, radius - 2, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Draw center dot - use centerColor if provided, otherwise use outer color
+                ctx.fillStyle = centerColor || color;
+                ctx.beginPath();
+                ctx.arc(x, y, radius - 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function getCommitColor(commit) {
+                // Return outer circle color based on push status
+                // HEAD will have green center, but outer circle shows push status
+                if (commit.pushed) {
+                    return '#4A90E2';  // Blue for pushed
+                } else {
+                    return '#9B59B6';  // Purple for unpushed
+                }
+            }
+
+            function drawCommitCard(ctx, y, width, isHovered) {
+                var cardX = 5;
+                var cardY = y - 35;
+                var cardWidth = width - 10;
+                var cardHeight = 65;
+                var borderRadius = 6;
+
+                // Save context state
+                ctx.save();
+
+                // Draw card shadow (subtle)
+                if (!isHovered) {
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetY = 2;
+                }
+
+                // Draw card background with rounded corners
+                ctx.fillStyle = isHovered ? '#f0f4f8' : '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(cardX + borderRadius, cardY);
+                ctx.lineTo(cardX + cardWidth - borderRadius, cardY);
+                ctx.quadraticCurveTo(cardX + cardWidth, cardY, cardX + cardWidth, cardY + borderRadius);
+                ctx.lineTo(cardX + cardWidth, cardY + cardHeight - borderRadius);
+                ctx.quadraticCurveTo(cardX + cardWidth, cardY + cardHeight, cardX + cardWidth - borderRadius, cardY + cardHeight);
+                ctx.lineTo(cardX + borderRadius, cardY + cardHeight);
+                ctx.quadraticCurveTo(cardX, cardY + cardHeight, cardX, cardY + cardHeight - borderRadius);
+                ctx.lineTo(cardX, cardY + borderRadius);
+                ctx.quadraticCurveTo(cardX, cardY, cardX + borderRadius, cardY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Reset shadow
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+
+                // Draw card border
+                ctx.strokeStyle = isHovered ? '#cbd5e0' : '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Restore context state
+                ctx.restore();
             }
 
             function loadChanges() {
@@ -347,6 +753,15 @@
                     contentType: 'application/json',
                     success: function(result) {
                         if (result.success) {
+                            console.log('[Git Control] === FULL GIT STATUS ===');
+                            console.log('Raw status object:', result.status);
+                            console.log('Staged files:', result.status.staged);
+                            console.log('Modified files:', result.status.modified);
+                            console.log('Created files:', result.status.created);
+                            console.log('Deleted files:', result.status.deleted);
+                            console.log('Not added files:', result.status.not_added);
+                            console.log('Files array:', result.status.files);
+                            console.log('=========================');
                             renderChanges(result.status);
                         }
                     }
@@ -354,37 +769,236 @@
             }
 
             function renderChanges(status) {
-                var $list = $('#git-changes-list');
-                var $count = $('#git-changes-count');
-                var $discardBtn = $('#git-btn-discard-changes');
+                // Parse status.files array for accurate per-file staging state
+                // Each file has 'index' (staged) and 'working_dir' (unstaged) properties
+                var stagedFiles = [];
+                var unstagedFiles = [];
 
-                var changes = [];
-                if (status.modified) changes = changes.concat(status.modified.map(function(f) { return {file: f, status: 'M'}; }));
-                if (status.not_added) changes = changes.concat(status.not_added.map(function(f) { return {file: f, status: 'U'}; }));
-                if (status.created) changes = changes.concat(status.created.map(function(f) { return {file: f, status: 'A'}; }));
-                if (status.deleted) changes = changes.concat(status.deleted.map(function(f) { return {file: f, status: 'D'}; }));
+                console.log('[Git Control] === FULL GIT STATUS ===');
+                console.log('status.files:', status.files);
 
-                $count.text(changes.length);
+                if (status.files && Array.isArray(status.files)) {
+                    status.files.forEach(function(fileObj) {
+                        // index: staging area status (' ' = no change, 'M' = modified, 'A' = added, 'D' = deleted, etc.)
+                        // working_dir: working directory status (' ' = no change, '?' = untracked)
+                        var isUntracked = fileObj.index === '?' || fileObj.working_dir === '?';
+                        var hasStaged = !isUntracked && fileObj.index !== ' ';
+                        var hasUnstaged = !isUntracked && fileObj.working_dir !== ' ';
 
-                if (changes.length === 0) {
-                    $discardBtn.hide();
-                    $list.html('<div class="git-empty-state"><i class="fa fa-check-circle"></i><p>No changes</p></div>');
+                        console.log('[Git Control] File:', fileObj.path, '| index:', fileObj.index, '| working_dir:', fileObj.working_dir, '| hasStaged:', hasStaged, '| hasUnstaged:', hasUnstaged, '| isUntracked:', isUntracked);
+
+                        // File appears in "Staged Changes" if it has staged changes
+                        if (hasStaged) {
+                            stagedFiles.push({
+                                file: fileObj.path,
+                                status: fileObj.index
+                            });
+                        }
+
+                        // File appears in "Changes" if it has unstaged changes OR is untracked
+                        if (hasUnstaged || isUntracked) {
+                            unstagedFiles.push({
+                                file: fileObj.path,
+                                status: isUntracked ? '?' : fileObj.working_dir
+                            });
+                        }
+                    });
+                }
+
+                console.log('[Git Control] Rendering - Unstaged:', unstagedFiles.length, 'Staged:', stagedFiles.length);
+
+                // Render both lists
+                renderFileList('#git-unstaged-list', unstagedFiles, 'unstaged');
+                renderFileList('#git-staged-list', stagedFiles, 'staged');
+
+                // Update counts
+                $('#git-unstaged-count').text(unstagedFiles.length);
+                $('#git-staged-count').text(stagedFiles.length);
+
+                // Update commit button state
+                updateCommitButton(stagedFiles.length);
+            }
+
+            function getStatusCode(type) {
+                var codes = {
+                    'modified': 'M',
+                    'created': 'A',
+                    'deleted': 'D',
+                    'not_added': 'U'
+                };
+                return codes[type] || '?';
+            }
+
+            function getFileStatusFromGit(file, status) {
+                // Determine file status from git status object
+                if (status.modified && status.modified.includes(file)) return 'M';
+                if (status.created && status.created.includes(file)) return 'A';
+                if (status.deleted && status.deleted.includes(file)) return 'D';
+                if (status.not_added && status.not_added.includes(file)) return 'U';
+                return '?';
+            }
+
+            function renderFileList(containerSelector, files, type) {
+                var $list = $(containerSelector);
+                var sectionId = type === 'staged' ? '#git-staged-section' : '#git-unstaged-section';
+                var $section = $(sectionId);
+
+                $list.empty();
+
+                if (files.length === 0) {
+                    $section.hide();  // Hide entire section when empty
                     return;
                 }
 
-                $discardBtn.show();
-                $list.empty();
-                changes.forEach(function(change) {
-                    var statusClass = 'git-status-' + change.status.toLowerCase();
-                    var statusText = {'M': 'Modified', 'A': 'Added', 'D': 'Deleted', 'U': 'Untracked'}[change.status];
+                $section.show();  // Show section when there are files
+
+                files.forEach(function(fileObj) {
+                    var icon = type === 'staged' ? 'fa-minus' : 'fa-plus';
+                    var statusClass = 'git-status-' + fileObj.status.toLowerCase();
 
                     var $item = $('<div class="git-change-item ' + statusClass + '">');
-                    $item.html(
-                        '<span class="git-change-status">' + change.status + '</span>' +
-                        '<span class="git-change-file">' + change.file + '</span>'
-                    );
+
+                    if (type === 'unstaged') {
+                        // Unstaged file: show stage button + discard button
+                        $item.html(
+                            '<button class="git-stage-btn" data-file="' + fileObj.file + '" data-action="unstaged">' +
+                            '<i class="fa ' + icon + '"></i>' +
+                            '</button>' +
+                            '<span class="git-change-status">' + fileObj.status + '</span>' +
+                            '<span class="git-change-file">' + fileObj.file + '</span>' +
+                            '<button class="git-discard-file-btn" data-file="' + fileObj.file + '" title="Discard changes">' +
+                            '<i class="fa fa-trash-o"></i>' +
+                            '</button>'
+                        );
+                    } else {
+                        // Staged file: only show unstage button (no discard)
+                        $item.html(
+                            '<button class="git-stage-btn" data-file="' + fileObj.file + '" data-action="staged">' +
+                            '<i class="fa ' + icon + '"></i>' +
+                            '</button>' +
+                            '<span class="git-change-status">' + fileObj.status + '</span>' +
+                            '<span class="git-change-file">' + fileObj.file + '</span>'
+                        );
+                    }
+
                     $list.append($item);
                 });
+
+                // Attach click handlers
+                $list.find('.git-stage-btn').on('click', function() {
+                    var file = $(this).data('file');
+                    var action = $(this).data('action');
+
+                    if (action === 'unstaged') {
+                        stageFile(file);
+                    } else {
+                        unstageFile(file);
+                    }
+                });
+
+                // Attach discard button handler (only for unstaged files)
+                $list.find('.git-discard-file-btn').on('click', function(e) {
+                    e.stopPropagation();  // Prevent triggering parent clicks
+                    var file = $(this).data('file');
+                    discardFile(file);
+                });
+            }
+
+            function stageFile(file) {
+                $.ajax({
+                    url: 'rosepetal-git/add',
+                    type: 'POST',
+                    data: JSON.stringify({ files: [file] }),
+                    contentType: 'application/json',
+                    success: function() {
+                        loadChanges();  // Refresh to show new state
+                    },
+                    error: function(xhr) {
+                        RED.notify("Failed to stage: " + file, "error");
+                    }
+                });
+            }
+
+            function unstageFile(file) {
+                $.ajax({
+                    url: 'rosepetal-git/unstage',
+                    type: 'POST',
+                    data: JSON.stringify({ files: [file] }),
+                    contentType: 'application/json',
+                    success: function() {
+                        loadChanges();  // Refresh to show new state
+                    },
+                    error: function(xhr) {
+                        RED.notify("Failed to unstage: " + file, "error");
+                    }
+                });
+            }
+
+            function stageAll() {
+                $.ajax({
+                    url: 'rosepetal-git/add',
+                    type: 'POST',
+                    data: JSON.stringify({ stageAll: true }),
+                    contentType: 'application/json',
+                    success: function() {
+                        loadChanges();
+                    },
+                    error: function(xhr) {
+                        RED.notify("Failed to stage all files", "error");
+                    }
+                });
+            }
+
+            function unstageAll() {
+                $.ajax({
+                    url: 'rosepetal-git/unstage',
+                    type: 'POST',
+                    data: JSON.stringify({ unstageAll: true }),
+                    contentType: 'application/json',
+                    success: function() {
+                        loadChanges();
+                    },
+                    error: function(xhr) {
+                        RED.notify("Failed to unstage all files", "error");
+                    }
+                });
+            }
+
+            function discardFile(file) {
+                if (!confirm('WARNING: Discard changes to "' + file + '"?\n\nThis will permanently delete your uncommitted changes. This cannot be undone!')) {
+                    return;
+                }
+
+                $.ajax({
+                    url: 'rosepetal-git/discard',
+                    type: 'POST',
+                    data: JSON.stringify({ files: [file] }),
+                    contentType: 'application/json',
+                    success: function() {
+                        RED.notify("Changes discarded: " + file, "success");
+                        // Reload flows from disk after discarding changes
+                        reloadFlowsFromDisk(function() {
+                            loadAll();
+                        });
+                    },
+                    error: function(xhr) {
+                        var errorInfo = xhr.responseJSON || {};
+                        RED.notify("Failed to discard changes: " + (errorInfo.error || "Unknown error"), "error");
+                    }
+                });
+            }
+
+            function updateCommitButton(stagedCount) {
+                var $commitPanel = $('#git-commit-panel');
+                var $commitBtn = $('#git-btn-commit');
+
+                $commitBtn.prop('disabled', stagedCount === 0);
+
+                if (stagedCount === 0) {
+                    $commitPanel.hide();  // Hide when no staged changes
+                } else {
+                    $commitPanel.show();  // Show when there are staged changes
+                }
             }
 
             function openCommitModal(commit) {
@@ -403,35 +1017,74 @@
                 $('#git-commit-modal').fadeOut(200);
             }
 
-            function handleCommitAction(action, mode) {
+            function showBlockingError(blockers, validation) {
+                var messages = [];
+                var actions = [];
+
+                if (blockers.includes('uncommitted_changes')) {
+                    messages.push('<p><i class="fa fa-file-o"></i> You have <strong>' + validation.uncommittedCount + ' uncommitted change(s)</strong>.</p>');
+                    messages.push('<p class="git-blocking-hint">Please commit or discard your changes first.</p>');
+                    actions.push('<button class="git-action-btn git-action-danger" id="git-discard-all-action"><i class="fa fa-trash-o"></i><span>Discard All Changes</span></button>');
+                }
+
+                if (blockers.includes('unpushed_commits')) {
+                    messages.push('<p><i class="fa fa-cloud-upload"></i> You have <strong>' + validation.unpushedCount + ' unpushed commit(s)</strong>.</p>');
+                    messages.push('<p class="git-blocking-hint">Please push your commits first.</p>');
+                    actions.push('<button class="git-action-btn git-action-primary" id="git-push-now-action"><i class="fa fa-upload"></i><span>Push Now</span></button>');
+                }
+
+                $('#git-blocking-message').html(messages.join(''));
+                $('#git-blocking-actions').html(actions.join('') + '<button class="git-action-btn" id="git-cancel-action"><i class="fa fa-times"></i><span>Cancel</span></button>');
+
+                // Close commit modal and show blocking modal
+                closeModal();
+                $('#git-blocking-modal').fadeIn(200);
+
+                // Attach action handlers
+                $('#git-discard-all-action').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                    handleDiscardChanges();
+                });
+
+                $('#git-push-now-action').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                    handlePush();
+                });
+
+                $('#git-cancel-action').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                });
+            }
+
+            function handleCommitAction(action) {
                 if (!currentCommit) return;
 
-                switch(action) {
-                    case 'checkout':
-                        closeModal();
-                        executeGitOperation('checkout', { commitRef: currentCommit.hash }, function() {
-                            // Reload flows from disk after checkout
-                            reloadFlowsFromDisk(function() {
-                                loadAll();
-                            });
-                        });
-                        break;
-                    case 'reset':
-                        if (mode === 'hard' && !confirm('WARNING: Hard reset will permanently discard all uncommitted changes. Are you sure?')) {
-                            return;
+                // Validate checkout safety before proceeding
+                if (action === 'checkout') {
+                    $.ajax({
+                        url: 'rosepetal-git/validate-checkout',
+                        type: 'POST',
+                        data: JSON.stringify({ targetRef: currentCommit.hash }),
+                        contentType: 'application/json',
+                        success: function(validation) {
+                            if (validation.canCheckout) {
+                                // Safe to checkout
+                                closeModal();
+                                executeGitOperation('checkout', { commitRef: currentCommit.hash }, function() {
+                                    // Reload flows from disk after checkout
+                                    reloadFlowsFromDisk(function() {
+                                        loadAll();
+                                    });
+                                });
+                            } else {
+                                // Show blocking errors
+                                showBlockingError(validation.blockers, validation);
+                            }
+                        },
+                        error: function(xhr) {
+                            RED.notify("Failed to validate checkout: " + (xhr.responseJSON?.error || "Unknown error"), "error");
                         }
-                        closeModal();
-                        executeGitOperation('reset', { commitRef: currentCommit.hash, resetMode: mode, safeMode: false }, function() {
-                            // Reload flows from disk after reset
-                            reloadFlowsFromDisk(function() {
-                                loadAll();
-                            });
-                        });
-                        break;
-                    case 'details':
-                        // Don't close modal for details view
-                        showCommitDetails(currentCommit.hash);
-                        break;
+                    });
                 }
             }
 
@@ -459,6 +1112,13 @@
             }
 
             function handlePush() {
+                // Check if there are commits to push
+                if (!projectInfo || !projectInfo.ahead || projectInfo.ahead === 0) {
+                    RED.notify("No commits to push", "warning");
+                    return;
+                }
+
+                // Normal push (commits in detached HEAD now create branches automatically)
                 setToolbarLoading('#git-btn-push', true);
                 executeGitOperation('push', {}, function() {
                     setToolbarLoading('#git-btn-push', false);
@@ -489,42 +1149,50 @@
                     return;
                 }
 
+                // Check if in detached HEAD state - show info about branch creation
+                if (projectInfo && projectInfo.isDetachedHead) {
+                    var warningMsg = 'ℹ️ Committing in Detached HEAD\n\n' +
+                        'You are creating a commit from an old state.\n\n' +
+                        'A new branch will be created automatically:\n' +
+                        '  • Branch name: from-<commit-hash>\n' +
+                        '  • Your changes will be on this new branch\n' +
+                        '  • You can merge or push this branch later\n\n' +
+                        'Do you want to continue?';
+
+                    if (!confirm(warningMsg)) {
+                        return;
+                    }
+                }
+
                 var $btn = $('#git-btn-commit');
                 $btn.prop('disabled', true).find('i').addClass('fa-spin');
 
-                // First, stage all changes
+                // Create commit with already-staged files
                 $.ajax({
-                    url: 'rosepetal-git/add',
+                    url: 'rosepetal-git/commit',
                     type: 'POST',
-                    data: JSON.stringify({ stageAll: true }),
+                    data: JSON.stringify({ message: message }),
                     contentType: 'application/json',
-                    success: function(addResult) {
-                        if (addResult.success) {
-                            // Then create the commit
-                            $.ajax({
-                                url: 'rosepetal-git/commit',
-                                type: 'POST',
-                                data: JSON.stringify({ message: message }),
-                                contentType: 'application/json',
-                                success: function(commitResult) {
-                                    if (commitResult.success) {
-                                        RED.notify("Commit created successfully", "success");
-                                        $('#git-commit-message').val(''); // Clear the textarea
-                                        loadAll(); // Reload UI to show new commit
-                                    }
-                                    $btn.prop('disabled', false).find('i').removeClass('fa-spin');
-                                },
-                                error: function(xhr) {
-                                    var error = xhr.responseJSON ? xhr.responseJSON.error : "Unknown error";
-                                    RED.notify("Commit failed: " + error, "error");
-                                    $btn.prop('disabled', false).find('i').removeClass('fa-spin');
-                                }
-                            });
+                    success: function(commitResult) {
+                        if (commitResult.success) {
+                            if (commitResult.createdBranch) {
+                                // Detached HEAD commit created a new branch
+                                RED.notify("Commit created on new branch '" + commitResult.branch + "'", "success");
+                            } else {
+                                RED.notify("Commit created successfully", "success");
+                            }
+                            $('#git-commit-message').val(''); // Clear the textarea
+                            loadAll(); // Reload UI to show new branch and commit
                         }
+                        $btn.prop('disabled', false).find('i').removeClass('fa-spin');
                     },
                     error: function(xhr) {
-                        var error = xhr.responseJSON ? xhr.responseJSON.error : "Unknown error";
-                        RED.notify("Failed to stage files: " + error, "error");
+                        var errorInfo = xhr.responseJSON || {};
+                        if (errorInfo.error || errorInfo.suggestion) {
+                            displayDetailedError(errorInfo, 'commit');
+                        } else {
+                            RED.notify("Commit failed: " + (errorInfo.error || "Unknown error"), "error");
+                        }
                         $btn.prop('disabled', false).find('i').removeClass('fa-spin');
                     }
                 });
@@ -557,6 +1225,24 @@
                 }
             }
 
+            function displayDetailedError(errorInfo, operation) {
+                // Create detailed error message
+                var message = errorInfo.error || "Git " + operation + " failed";
+
+                // Add suggestion if available
+                if (errorInfo.suggestion) {
+                    message += "\n\n" + errorInfo.suggestion;
+                }
+
+                // Display main error notification
+                RED.notify(message, "error");
+
+                // Log details to console for debugging
+                if (errorInfo.details) {
+                    console.error("Git Error Details:", errorInfo.details);
+                }
+            }
+
             function executeGitOperation(operation, data, successCallback, errorCallback) {
                 data = data || {};
 
@@ -572,9 +1258,17 @@
                         }
                     },
                     error: function(xhr) {
-                        var error = xhr.responseJSON ? xhr.responseJSON.error : "Unknown error";
-                        RED.notify("Git " + operation + " failed: " + error, "error");
-                        if (errorCallback) errorCallback(error);
+                        var errorInfo = xhr.responseJSON || {};
+
+                        // Use detailed error if available, otherwise fallback to simple message
+                        if (errorInfo.error || errorInfo.suggestion) {
+                            displayDetailedError(errorInfo, operation);
+                        } else {
+                            var simpleError = errorInfo.error || "Unknown error";
+                            RED.notify("Git " + operation + " failed: " + simpleError, "error");
+                        }
+
+                        if (errorCallback) errorCallback(errorInfo.error || "Unknown error");
                     }
                 });
             }
