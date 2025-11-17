@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="resources/node-red-contrib-rosepetal-git-control/git-control.css">
+<link rel="stylesheet" href="node-red-contrib-rosepetal-git-control/plugin.css">
 
 <script type="text/javascript">
 (function() {
@@ -9,7 +9,6 @@
 
             if (!projectsEnabled) {
                 // Projects disabled - don't register the sidebar tab
-                console.log("Git Control plugin: Node-RED projects not enabled, plugin not loaded");
                 return;
             }
 
@@ -244,19 +243,16 @@
                 var visible = $container.is(':visible');
                 loadCommitsAttempts++;
 
-                console.log('[Git Control] Attempt', loadCommitsAttempts, '- visible:', visible, 'width:', width);
 
                 // If container is visible and has width, load commits and stop trying
                 if (visible && width > 0) {
                     clearInterval(loadCommitsInterval);
-                    console.log('[Git Control] Loading commits - container ready');
                     loadCommits(50);
                 }
 
                 // Give up after max attempts
                 if (loadCommitsAttempts >= maxLoadAttempts) {
                     clearInterval(loadCommitsInterval);
-                    console.log('[Git Control] Gave up loading commits - container not ready');
                 }
             }, 100);
 
@@ -777,15 +773,6 @@
                     contentType: 'application/json',
                     success: function(result) {
                         if (result.success) {
-                            console.log('[Git Control] === FULL GIT STATUS ===');
-                            console.log('Raw status object:', result.status);
-                            console.log('Staged files:', result.status.staged);
-                            console.log('Modified files:', result.status.modified);
-                            console.log('Created files:', result.status.created);
-                            console.log('Deleted files:', result.status.deleted);
-                            console.log('Not added files:', result.status.not_added);
-                            console.log('Files array:', result.status.files);
-                            console.log('=========================');
                             renderChanges(result.status);
                         }
                     }
@@ -793,13 +780,8 @@
             }
 
             function renderChanges(status) {
-                // Parse status.files array for accurate per-file staging state
-                // Each file has 'index' (staged) and 'working_dir' (unstaged) properties
                 var stagedFiles = [];
                 var unstagedFiles = [];
-
-                console.log('[Git Control] === FULL GIT STATUS ===');
-                console.log('status.files:', status.files);
 
                 if (status.files && Array.isArray(status.files)) {
                     status.files.forEach(function(fileObj) {
@@ -809,7 +791,6 @@
                         var hasStaged = !isUntracked && fileObj.index !== ' ';
                         var hasUnstaged = !isUntracked && fileObj.working_dir !== ' ';
 
-                        console.log('[Git Control] File:', fileObj.path, '| index:', fileObj.index, '| working_dir:', fileObj.working_dir, '| hasStaged:', hasStaged, '| hasUnstaged:', hasUnstaged, '| isUntracked:', isUntracked);
 
                         // File appears in "Staged Changes" if it has staged changes
                         if (hasStaged) {
@@ -829,7 +810,6 @@
                     });
                 }
 
-                console.log('[Git Control] Rendering - Unstaged:', unstagedFiles.length, 'Staged:', stagedFiles.length);
 
                 // Render both lists
                 renderFileList('#git-unstaged-list', unstagedFiles, 'unstaged');

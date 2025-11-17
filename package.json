@@ -1,19 +1,16 @@
 {
   "name": "node-red-contrib-rosepetal-git-control",
   "version": "1.0.0",
-  "description": "Advanced Git control sidebar plugin for Node-RED - supports reset, revert, checkout, history viewing, and other advanced Git operations",
-  "main": "git-control-api.js",
-  
+  "description": "Advanced Git control sidebar plugin for Node-RED",
+  "main": "lib/api.js",
   "keywords": [
     "node-red",
     "git",
     "version-control",
     "git-control",
-    "reset",
-    "revert",
-    "checkout",
-    "commit",
-    "history"
+    "sidebar",
+    "plugin",
+    "rosepetal"
   ],
   "author": "Rosepetal",
   "license": "MIT",
@@ -23,11 +20,8 @@
   },
   "node-red": {
     "version": ">=2.0.0",
-    "nodes": {
-      "git-control-api": "git-control-api.js"
-    },
     "plugins": {
-      "git-control": "git-control-plugin.html"
+      "git-control": "lib/plugin.html"
     }
   },
   "dependencies": {

@@ -1,7 +1,3 @@
 node_modules/
 .vscode/
 package-lock.json
-
-# Development files
-CLAUDE.md
-.claude/
