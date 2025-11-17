@@ -2,6 +2,8 @@
 
 A Node-RED sidebar plugin for Git version control. Manage commits, branches, and remote synchronization directly from the editor without switching to the command line.
 
+![Example](assets/example.png)
+
 ## Why you might want it
 
 - **Visual commit graph**: See your Git history with branch labels, push status, and parent relationships on a canvas-based timeline
