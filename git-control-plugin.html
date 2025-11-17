@@ -4,6 +4,15 @@
 (function() {
     RED.plugins.registerPlugin("rosepetal-git-control-plugin", {
         onadd: function() {
+            // Check if Node-RED projects are enabled (matches Node-RED's History panel behavior)
+            var projectsEnabled = RED.settings.theme("projects.enabled", false);
+
+            if (!projectsEnabled) {
+                // Projects disabled - don't register the sidebar tab
+                console.log("Git Control plugin: Node-RED projects not enabled, plugin not loaded");
+                return;
+            }
+
             // Create sidebar content container
             var content = $("<div>").css({"position":"relative","height":"100%"}).addClass("git-control-panel");
 
