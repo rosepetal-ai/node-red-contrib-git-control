@@ -20,6 +20,9 @@
   },
   "node-red": {
     "version": ">=2.0.0",
+    "nodes": {
+      "git-control-api": "lib/api.js"
+    },
     "plugins": {
       "git-control": "lib/plugin.html"
     }
