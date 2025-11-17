@@ -7,7 +7,7 @@ A Node-RED sidebar plugin for Git version control. Manage commits, branches, and
 - **Visual commit graph**: See your Git history with branch labels, push status, and parent relationships on a canvas-based timeline
 - **Detached HEAD safety**: Automatically creates branches when committing from historical states to prevent orphaned commits
 - **Flow synchronization**: Reloads flows after checkout/reset/pull so your editor stays in sync with disk changes
-- **Smart error messages**: Context-aware suggestions guide you through merge conflicts, push rejections, and authentication issues
+- **Smart error messages**: Context-aware suggestions guide you through issues
 - **Integrated workflow**: Uses Node-RED's project system and SSH keys—no separate Git configuration needed
 
 ## Quick start
@@ -33,7 +33,7 @@ The Git Control sidebar has several sections:
 
 ### Toolbar
 - **Fetch**: Download updates from remote without merging
-- **Pull**: Download and merge changes from remote (reloads flows automatically)
+- **Pull**: Download from remote with merge (reloads flows automatically)
 - **Push**: Upload your commits to remote (auto-sets upstream for new branches)
 - **Refresh**: Reload all data from repository
 
@@ -83,19 +83,3 @@ Key routes:
 
 All routes require `git-control.read` or `git-control.write` permissions when Node-RED authentication is enabled.
 
-## How it works (at a glance)
-
-- Backend registers HTTP Admin API endpoints using Node-RED's `RED.httpAdmin` system
-- Frontend sidebar plugin renders using `RED.plugins.registerPlugin()` and `RED.sidebar.addTab()`
-- Git operations use `simple-git` library with Node-RED's SSH keys from `~/.node-red/projects/.sshkeys/`
-- After destructive operations (checkout, reset, pull), flows are reloaded from disk to prevent editor/disk divergence
-- Detached HEAD commits automatically create branches to prevent orphaned commit loss
-- Error messages match common Git error patterns and provide actionable resolution steps
-
-## Limitations & notes
-
-- Only works with Node-RED projects that have Git initialized
-- Flows reload triggers a full editor refresh after Git operations modify flows.json
-- Safe mode blocks hard resets by default—you must explicitly confirm destructive operations
-- SSH authentication uses Node-RED's project SSH keys, not your personal `~/.ssh` keys
-- First push to a new branch automatically sets upstream tracking with `-u` flag
