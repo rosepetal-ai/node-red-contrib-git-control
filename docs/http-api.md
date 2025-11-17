@@ -516,6 +516,3 @@ When committing in detached HEAD state, the endpoint automatically creates a new
 
 ### SSH Key Configuration
 The plugin uses Node-RED's project SSH keys (`~/.node-red/projects/.sshkeys/__default_NodeRedTest`) rather than the user's `~/.ssh` keys.
-
-### Safe Mode
-Hard reset operations are blocked by default (`safeMode: true`). The frontend must explicitly set `safeMode: false` after user confirmation.
