@@ -20,10 +20,7 @@ A Node-RED sidebar plugin for Git version control. Manage commits, branches, and
    npm install node-red-contrib-rosepetal-git-control
    ```
 
-2. Restart Node-RED:
-   ```bash
-   node-red-restart
-   ```
+2. Restart Node-RED.
 
 3. Open the Node-RED editor and look for the **Git Control** tab in the right sidebar (next to Debug, Config, etc.)
 
