@@ -1,8 +1,11 @@
 {
   "name": "@rosepetal/node-red-contrib-git-control",
   "version": "1.0.0",
-  "description": "Advanced Git control sidebar plugin for Node-RED",
-  "main": "lib/api.js",
+  "description": "A Node-RED advanced Git control sidebar plugin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rosepetal-ai/node-red-contrib-git-control.git"
+  },
   "keywords": [
     "node-red",
     "git",
@@ -12,11 +15,20 @@
     "plugin",
     "rosepetal"
   ],
-  "author": "Rosepetal",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rosepetal-ai/node-red-contrib-git-control.git"
+  "author": "Rosepetal SL (https://www.rosepetal.ai)",
+  "contributors": [
+    {
+      "name": "Nil Allue",
+      "email": "nil.allue@rosepetal.ai"
+    }
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/rosepetal-ai/node-red-contrib-git-control/issues"
+  },
+  "homepage": "https://github.com/rosepetal-ai/node-red-contrib-git-control#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "node-red": {
     "version": ">=2.0.0",
@@ -29,9 +41,5 @@
   },
   "dependencies": {
     "simple-git": "^3.25.0"
-  },
-  "devDependencies": {},
-  "engines": {
-    "node": ">=14.0.0"
   }
 }
