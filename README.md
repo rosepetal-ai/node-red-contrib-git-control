@@ -1,4 +1,4 @@
-# node-red-contrib-rosepetal-git-control
+# node-red-contrib-git-control
 
 A Node-RED sidebar plugin for Git version control. Manage commits, branches, and remote synchronization directly from the editor without switching to the command line.
 
@@ -17,7 +17,7 @@ A Node-RED sidebar plugin for Git version control. Manage commits, branches, and
 1. Install the plugin in your Node-RED user directory:
    ```bash
    cd ~/.node-red
-   npm install node-red-contrib-rosepetal-git-control
+   npm install @rosepetal/node-red-contrib-git-control
    ```
 
 2. Restart Node-RED.

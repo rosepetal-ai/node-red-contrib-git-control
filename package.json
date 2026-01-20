@@ -1,5 +1,5 @@
 {
-  "name": "node-red-contrib-rosepetal-git-control",
+  "name": "@rosepetal/node-red-contrib-git-control",
   "version": "1.0.0",
   "description": "Advanced Git control sidebar plugin for Node-RED",
   "main": "lib/api.js",
@@ -16,7 +16,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rosepetal-ai/node-red-contrib-rosepetal-git-control.git"
+    "url": "https://github.com/rosepetal-ai/node-red-contrib-git-control.git"
   },
   "node-red": {
     "version": ">=2.0.0",
