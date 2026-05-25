@@ -681,54 +681,6 @@
     color: #c62828;
 }
 
-/* ==================== Details Panel ==================== */
-
-.git-details-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 50%;
-    max-width: 600px;
-    height: 100%;
-    background-color: var(--red-ui-primary-background, #fff);
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-}
-
-.git-details-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
-    background-color: var(--red-ui-secondary-background-inactive, #f9f9f9);
-}
-
-.git-details-header h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.git-details-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-}
-
-.git-details-content pre {
-    background-color: var(--red-ui-secondary-background-inactive, #f9f9f9);
-    padding: 16px;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-size: 12px;
-    line-height: 1.5;
-    margin: 0;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-}
-
 /* ==================== Utility Buttons ==================== */
 
 .git-btn-icon {
@@ -761,28 +713,24 @@
 /* ==================== Scrollbar Styling ==================== */
 
 .git-commits-list::-webkit-scrollbar,
-.git-changes-list::-webkit-scrollbar,
-.git-details-content::-webkit-scrollbar {
+.git-changes-list::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 .git-commits-list::-webkit-scrollbar-track,
-.git-changes-list::-webkit-scrollbar-track,
-.git-details-content::-webkit-scrollbar-track {
+.git-changes-list::-webkit-scrollbar-track {
     background: transparent;
 }
 
 .git-commits-list::-webkit-scrollbar-thumb,
-.git-changes-list::-webkit-scrollbar-thumb,
-.git-details-content::-webkit-scrollbar-thumb {
+.git-changes-list::-webkit-scrollbar-thumb {
     background: var(--red-ui-secondary-border-color, #ccc);
     border-radius: 4px;
 }
 
 .git-commits-list::-webkit-scrollbar-thumb:hover,
-.git-changes-list::-webkit-scrollbar-thumb:hover,
-.git-details-content::-webkit-scrollbar-thumb:hover {
+.git-changes-list::-webkit-scrollbar-thumb:hover {
     background: var(--red-ui-secondary-border-color-hover, #999);
 }
 
@@ -810,8 +758,7 @@ body.red-ui-theme-midnight .git-btn-icon:hover {
 }
 
 body.red-ui-theme-midnight .git-branch-selector,
-body.red-ui-theme-midnight .git-modal-content,
-body.red-ui-theme-midnight .git-details-panel {
+body.red-ui-theme-midnight .git-modal-content {
     background-color: #2d2d2d;
     color: #ddd;
     border-color: #444;
@@ -831,8 +778,7 @@ body.red-ui-theme-midnight .git-commit-hash {
     color: #aaa;
 }
 
-body.red-ui-theme-midnight .git-commit-details,
-body.red-ui-theme-midnight .git-details-content pre {
+body.red-ui-theme-midnight .git-commit-details {
     background-color: #1e1e1e;
 }
 
@@ -1044,10 +990,6 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
 
 /* Narrow sidebar adjustments */
 @media (max-width: 400px) {
-    .git-details-panel {
-        width: 90%;
-    }
-
     .git-modal-content {
         width: 95%;
     }
@@ -1275,16 +1217,6 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                         </div>
                     </div>
 
-                    <!-- Details Panel -->
-                    <div class="git-details-panel" id="git-details-panel" style="display: none;">
-                        <div class="git-details-header">
-                            <h4 id="git-details-title">Details</h4>
-                            <button class="git-btn-icon" id="git-details-close">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="git-details-content" id="git-details-content"></div>
-                    </div>
                 </div>
             `;
 
@@ -1296,13 +1228,19 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
             var currentBranch = '';
             var projectInfo = null;
 
-            // Register keyboard shortcut and tab visibility handler
+            // Escape untrusted text (file paths, commit messages, authors) before
+            // inserting into HTML / attributes, to avoid breakage and injection.
+            function escapeHtml(value) {
+                return $('<div>').text(value == null ? '' : String(value)).html();
+            }
+            function escapeAttr(value) {
+                return escapeHtml(value).replace(/"/g, '&quot;');
+            }
+
+            // Register keyboard shortcut to show the tab.
+            // Showing it triggers the tab's onchange.
             RED.actions.add("core:show-git-control-tab", function() {
                 RED.sidebar.show("rosepetal-git-control");
-                // Reload commits when tab becomes visible (canvas needs visible container for proper dimensions)
-                setTimeout(function() {
-                    loadCommits(50);
-                }, 100);
             });
 
             // Add sidebar tab
@@ -1313,6 +1251,11 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 iconClass: "fa fa-git",
                 content: content,
                 action: "core:show-git-control-tab",
+                // onchange: whenever this tab is selected (clicked or restored on load).
+                // Delayed 100 ms because container is created a bit later.
+                onchange: function() {
+                    setTimeout(loadAll, 100);
+                },
                 enableOnEdit: false
             });
 
@@ -1394,11 +1337,6 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 // Modal handlers
                 $('#git-modal-close, #git-modal-overlay').on('click', closeModal);
                 $('#git-action-checkout').on('click', function() { handleCommitAction('checkout'); });
-
-                // Details panel close
-                $('#git-details-close').on('click', function() {
-                    $('#git-details-panel').fadeOut(200);
-                });
 
                 // Blocking modal close
                 $('#git-blocking-close, #git-blocking-overlay').on('click', function() {
@@ -1757,7 +1695,7 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
 
                     // Show tooltip on hover
                     if (hoveredCommit) {
-                        tooltip.html('<strong>' + hoveredCommit.hash.substring(0, 7) + '</strong><br>' + hoveredCommit.message);
+                        tooltip.html('<strong>' + escapeHtml(hoveredCommit.hash.substring(0, 7)) + '</strong><br>' + escapeHtml(hoveredCommit.message));
                         tooltip.css({
                             display: 'block',
                             left: (e.clientX - rect.left + 15) + 'px',
@@ -1930,25 +1868,6 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 updateCommitButton(stagedFiles.length);
             }
 
-            function getStatusCode(type) {
-                var codes = {
-                    'modified': 'M',
-                    'created': 'A',
-                    'deleted': 'D',
-                    'not_added': 'U'
-                };
-                return codes[type] || '?';
-            }
-
-            function getFileStatusFromGit(file, status) {
-                // Determine file status from git status object
-                if (status.modified && status.modified.includes(file)) return 'M';
-                if (status.created && status.created.includes(file)) return 'A';
-                if (status.deleted && status.deleted.includes(file)) return 'D';
-                if (status.not_added && status.not_added.includes(file)) return 'U';
-                return '?';
-            }
-
             function renderFileList(containerSelector, files, type) {
                 var $list = $(containerSelector);
                 var sectionId = type === 'staged' ? '#git-staged-section' : '#git-unstaged-section';
@@ -1969,26 +1888,30 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
 
                     var $item = $('<div class="git-change-item ' + statusClass + '">');
 
+                    var fileAttr = escapeAttr(fileObj.file);
+                    var fileText = escapeHtml(fileObj.file);
+                    var statusText = escapeHtml(fileObj.status);
+
                     if (type === 'unstaged') {
                         // Unstaged file: show stage button + discard button
                         $item.html(
-                            '<button class="git-stage-btn" data-file="' + fileObj.file + '" data-action="unstaged">' +
+                            '<button class="git-stage-btn" data-file="' + fileAttr + '" data-action="unstaged">' +
                             '<i class="fa ' + icon + '"></i>' +
                             '</button>' +
-                            '<span class="git-change-status">' + fileObj.status + '</span>' +
-                            '<span class="git-change-file">' + fileObj.file + '</span>' +
-                            '<button class="git-discard-file-btn" data-file="' + fileObj.file + '" title="Discard changes">' +
+                            '<span class="git-change-status">' + statusText + '</span>' +
+                            '<span class="git-change-file">' + fileText + '</span>' +
+                            '<button class="git-discard-file-btn" data-file="' + fileAttr + '" title="Discard changes">' +
                             '<i class="fa fa-trash-o"></i>' +
                             '</button>'
                         );
                     } else {
                         // Staged file: only show unstage button (no discard)
                         $item.html(
-                            '<button class="git-stage-btn" data-file="' + fileObj.file + '" data-action="staged">' +
+                            '<button class="git-stage-btn" data-file="' + fileAttr + '" data-action="staged">' +
                             '<i class="fa ' + icon + '"></i>' +
                             '</button>' +
-                            '<span class="git-change-status">' + fileObj.status + '</span>' +
-                            '<span class="git-change-file">' + fileObj.file + '</span>'
+                            '<span class="git-change-status">' + statusText + '</span>' +
+                            '<span class="git-change-file">' + fileText + '</span>'
                         );
                     }
 
@@ -2115,10 +2038,10 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
             function openCommitModal(commit) {
                 currentCommit = commit;
 
-                var html = '<div class="git-commit-detail-item"><strong>Hash:</strong> ' + commit.hash + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Message:</strong> ' + $('<div>').text(commit.message).html() + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Author:</strong> ' + commit.author + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Date:</strong> ' + commit.date + '</div>';
+                var html = '<div class="git-commit-detail-item"><strong>Hash:</strong> ' + escapeHtml(commit.hash) + '</div>';
+                html += '<div class="git-commit-detail-item"><strong>Message:</strong> ' + escapeHtml(commit.message) + '</div>';
+                html += '<div class="git-commit-detail-item"><strong>Author:</strong> ' + escapeHtml(commit.author) + '</div>';
+                html += '<div class="git-commit-detail-item"><strong>Date:</strong> ' + escapeHtml(commit.date) + '</div>';
 
                 $('#git-modal-commit-details').html(html);
                 $('#git-commit-modal').fadeIn(200);
@@ -2395,60 +2318,30 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 });
             }
 
+            // After a git operation changes the flow file on disk, ask the
+            // Node-RED runtime to reload flows from storage. The "reload"
+            // deployment type re-reads the flow file from disk and ignores the
+            // request body (so we don't have to read+re-POST the whole flow
+            // set). The runtime holds the old flows in memory until this runs,
+            // so we reload the editor afterwards to resync the workspace.
             function reloadFlowsFromDisk(callback) {
-                // Read flows.json from disk via backend
                 $.ajax({
-                    url: 'rosepetal-git/read-flows',
+                    url: 'flows',
                     type: 'POST',
+                    headers: { 'Node-RED-Deployment-Type': 'reload' },
                     data: JSON.stringify({}),
                     contentType: 'application/json',
-                    success: function(result) {
-                        if (result.success && result.flows) {
-                            // POST the flows from disk to Node-RED
-                            $.ajax({
-                                url: '/flows',
-                                type: 'POST',
-                                data: JSON.stringify(result.flows),
-                                contentType: 'application/json',
-                                success: function() {
-                                    RED.notify("Flows reloaded. Refreshing editor...", "success");
-                                    // Reload page after 1 second delay
-                                    setTimeout(function() {
-                                        window.location.reload();
-                                    }, 1000);
-                                },
-                                error: function() {
-                                    RED.notify("Failed to reload flows", "error");
-                                    if (callback) callback();
-                                }
-                            });
-                        } else {
-                            RED.notify("Failed to read flows from disk", "error");
-                            if (callback) callback();
-                        }
+                    success: function() {
+                        RED.notify("Flows reloaded from disk. Refreshing editor…", "success");
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 800);
                     },
                     error: function(xhr) {
-                        var error = xhr.responseJSON ? xhr.responseJSON.error : "Unknown error";
-                        RED.notify("Failed to read flows: " + error, "error");
+                        var info = xhr.responseJSON || {};
+                        var error = info.message || info.error || "Unknown error";
+                        RED.notify("Failed to reload flows: " + error, "error");
                         if (callback) callback();
-                    }
-                });
-            }
-
-            function showCommitDetails(commitHash) {
-                $('#git-details-panel').fadeIn(200);
-                $('#git-details-title').text('Commit Details');
-                $('#git-details-content').html('<div style="text-align: center; padding: 20px;"><i class="fa fa-spinner fa-spin"></i></div>');
-
-                $.ajax({
-                    url: 'rosepetal-git/show',
-                    type: 'POST',
-                    data: JSON.stringify({ commitRef: commitHash }),
-                    contentType: 'application/json',
-                    success: function(result) {
-                        if (result.success) {
-                            $('#git-details-content').html('<pre>' + $('<div>').text(result.details).html() + '</pre>');
-                        }
                     }
                 });
             }

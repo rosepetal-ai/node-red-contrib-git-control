@@ -447,25 +447,6 @@ Force pushes with `--force-with-lease` (requires confirmation).
 }
 ```
 
-### Flow Synchronization
-
-#### `POST /rosepetal-git/read-flows`
-Reads flows.json from disk for reloading after Git operations.
-
-**Response 200**
-```json
-{
-  "success": true,
-  "flows": [
-    {
-      "id": "tab1",
-      "type": "tab",
-      "label": "Flow 1"
-    }
-  ]
-}
-```
-
 ## Error Handling
 
 The plugin provides context-aware error messages with actionable suggestions:
@@ -503,11 +484,12 @@ The plugin provides context-aware error messages with actionable suggestions:
 ## Integration Notes
 
 ### Flow Reload Pattern
-After destructive Git operations (checkout, reset, pull, discard), the UI must:
-1. Call the Git operation endpoint
-2. Call `POST /rosepetal-git/read-flows` to read flows.json from disk
-3. Call `POST /flows` to deploy the flows to Node-RED runtime
-4. Reload the editor with `window.location.reload()`
+After destructive Git operations (checkout, reset, pull, discard), the UI keeps
+the editor in sync with disk by:
+1. Calling the Git operation endpoint
+2. `POST /flows` with header `Node-RED-Deployment-Type: reload`, which tells the
+   Node-RED runtime to re-read its flow file from disk
+3. Reloading the editor with `window.location.reload()`
 
 This prevents editor state from diverging from disk state.
 
@@ -515,4 +497,4 @@ This prevents editor state from diverging from disk state.
 When committing in detached HEAD state, the endpoint automatically creates a new branch named `from-<hash>` to prevent orphaned commits.
 
 ### SSH Key Configuration
-The plugin uses Node-RED's project SSH keys (`~/.node-red/projects/.sshkeys/__default_NodeRedTest`) rather than the user's `~/.ssh` keys.
+The plugin uses Node-RED's project SSH keys (in `~/.node-red/projects/.sshkeys/`) rather than the user's `~/.ssh` keys. The key is resolved per project: an explicit selection, else a key whose name matches the project, else the only key present.
