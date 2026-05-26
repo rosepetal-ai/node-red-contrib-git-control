@@ -244,32 +244,6 @@
     word-break: break-all;
 }
 
-/* Stage/Unstage Buttons */
-.git-stage-btn {
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background-color: transparent;
-    color: var(--red-ui-text-color-secondary, #666);
-    cursor: pointer;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    font-size: 12px;
-}
-
-.git-stage-btn:hover {
-    background-color: #4285f4;
-    color: white;
-}
-
-.git-stage-btn:active {
-    transform: scale(0.9);
-}
-
 /* Discard file button */
 .git-discard-file-btn {
     flex-shrink: 0;
@@ -295,6 +269,193 @@
 
 .git-discard-file-btn:active {
     transform: scale(0.9);
+}
+
+/* ==================== Flow-level breakdown ==================== */
+
+.git-flow-units {
+    border-top: 1px dashed var(--red-ui-secondary-border-color, #e0e0e0);
+    background-color: var(--red-ui-secondary-background-inactive, #fafafa);
+}
+
+.git-flow-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 26px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #efefef);
+}
+
+.git-flow-unit:last-child { border-bottom: none; }
+
+.git-flow-unit:hover {
+    background-color: var(--red-ui-secondary-background-hover, #f0f0f0);
+}
+
+.git-flow-unit-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #999;
+}
+
+.git-flow-unit-status.git-dot-added { background: #2e7d32; }
+.git-flow-unit-status.git-dot-modified { background: #e65100; }
+.git-flow-unit-status.git-dot-removed { background: #c62828; }
+
+.git-flow-unit-icon {
+    width: 14px;
+    text-align: center;
+    color: var(--red-ui-text-color-secondary, #888);
+    flex-shrink: 0;
+}
+
+.git-flow-unit-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--red-ui-text-color, #333);
+}
+
+.git-flow-unit-counts {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--red-ui-text-color-secondary, #888);
+    flex-shrink: 0;
+}
+
+.git-flow-unit-counts .add { color: #2e7d32; }
+.git-flow-unit-counts .mod { color: #e65100; }
+.git-flow-unit-counts .del { color: #c62828; }
+
+.git-flow-unit-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--red-ui-text-color-secondary, #888);
+    cursor: pointer;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.git-flow-unit-btn:hover {
+    background-color: var(--red-ui-secondary-background-hover, #e0e0e0);
+    color: var(--red-ui-text-color, #333);
+}
+
+/* Flow diff modal body */
+.git-diff-unit-section { margin-bottom: 14px; }
+
+.git-diff-unit-section > strong {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--red-ui-text-color-secondary, #666);
+    margin-bottom: 6px;
+}
+
+.git-diff-node {
+    border: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.git-diff-node-head {
+    padding: 6px 10px;
+    background: var(--red-ui-secondary-background-inactive, #f5f5f5);
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--red-ui-text-color, #333);
+}
+
+.git-diff-node-type {
+    font-family: monospace;
+    color: var(--red-ui-text-color-secondary, #666);
+}
+
+.git-diff-node-id {
+    margin-left: auto;
+    font-family: monospace;
+    color: var(--red-ui-text-color-subdued, #999);
+}
+
+/* The diff modal is wider/taller than the action modals */
+#git-diff-modal .git-modal-content {
+    max-width: 860px;
+    width: 92%;
+    max-height: 88vh;
+}
+
+/* Two-column (Before / After) field diff */
+.git-diff-cols-header,
+.git-diff-field {
+    display: grid;
+    grid-template-columns: 120px 1fr 1fr;
+    font-family: monospace;
+    font-size: 11px;
+    border-top: 1px solid var(--red-ui-secondary-border-color, #f0f0f0);
+}
+
+.git-diff-cols-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--red-ui-text-color-secondary, #999);
+    background: var(--red-ui-secondary-background-inactive, #f5f5f5);
+}
+
+.git-diff-cols-header > span { padding: 4px 8px; }
+
+.git-diff-field-key {
+    padding: 4px 8px;
+    color: var(--red-ui-text-color-secondary, #888);
+    word-break: break-all;
+}
+
+.git-diff-col {
+    padding: 4px 8px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-left: 1px solid var(--red-ui-secondary-border-color, #f0f0f0);
+}
+
+.git-diff-col-before { background: rgba(198, 40, 40, 0.09); color: #c62828; }
+.git-diff-col-after { background: rgba(46, 125, 50, 0.11); color: #2e7d32; }
+
+.git-diff-empty { padding: 6px 10px; font-size: 11px; color: var(--red-ui-text-color-secondary, #999); }
+
+/* Collapsible per-node detail in the diff modal */
+.git-diff-node-head { cursor: pointer; user-select: none; }
+.git-diff-node-head:hover { background: var(--red-ui-secondary-background-hover, #ececec); }
+.git-diff-node-chevron { transition: transform 0.15s ease; color: var(--red-ui-text-color-secondary, #999); font-size: 10px; width: 10px; }
+.git-diff-node.open .git-diff-node-chevron { transform: rotate(90deg); }
+.git-diff-node-body { display: none; }
+.git-diff-node.open .git-diff-node-body { display: block; }
+.git-diff-node-added .fa-plus { color: #2e7d32; }
+.git-diff-node-removed .fa-minus { color: #c62828; }
+.git-diff-node-modified .fa-pencil { color: #e65100; }
+
+.git-diff-node-revert {
+    margin-left: 6px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--red-ui-text-color-secondary, #888);
+    cursor: pointer;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.git-diff-node-revert:hover {
+    background: var(--red-ui-secondary-background-hover, #e0e0e0);
+    color: var(--red-ui-text-color, #333);
 }
 
 /* ==================== Commit Panel ==================== */
@@ -817,6 +978,11 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
     background-color: #3d1e1e !important;
 }
 
+/* Brighter before/after diff columns for readability on dark backgrounds */
+body.red-ui-theme-midnight .git-diff-cols-header { background: #1e1e1e; }
+body.red-ui-theme-midnight .git-diff-col-before { background: rgba(229, 115, 115, 0.16); color: #ff8a80; }
+body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132, 0.16); color: #b9f6ca; }
+
 /* ==================== Warning Banner ==================== */
 
 .git-warning-banner {
@@ -1100,31 +1266,14 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                         </select>
                     </div>
 
-                    <!-- Unstaged Changes Section -->
+                    <!-- Changes Section (single list - commit stages everything) -->
                     <div class="git-changes-section" id="git-unstaged-section">
                         <div class="git-section-header">
                             <i class="fa fa-file-o"></i>
                             <span>Changes</span>
                             <span class="git-badge" id="git-unstaged-count">0</span>
-                            <button class="git-btn-icon" id="git-btn-stage-all" title="Stage All Changes">
-                                <i class="fa fa-plus"></i>
-                            </button>
                         </div>
                         <div class="git-changes-list" id="git-unstaged-list">
-                        </div>
-                    </div>
-
-                    <!-- Staged Changes Section -->
-                    <div class="git-changes-section" id="git-staged-section">
-                        <div class="git-section-header">
-                            <i class="fa fa-check"></i>
-                            <span>Staged Changes</span>
-                            <span class="git-badge" id="git-staged-count">0</span>
-                            <button class="git-btn-icon" id="git-btn-unstage-all" title="Unstage All Changes">
-                                <i class="fa fa-minus"></i>
-                            </button>
-                        </div>
-                        <div class="git-changes-list" id="git-staged-list">
                         </div>
                     </div>
 
@@ -1214,6 +1363,20 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                                 <div id="git-blocking-message"></div>
                                 <div class="git-modal-actions" id="git-blocking-actions"></div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Flow / File Diff Modal -->
+                    <div class="git-modal" id="git-diff-modal" style="display: none;">
+                        <div class="git-modal-overlay" id="git-diff-overlay"></div>
+                        <div class="git-modal-content">
+                            <div class="git-modal-header">
+                                <h4 id="git-diff-title">Changes</h4>
+                                <button class="git-modal-close" id="git-diff-close">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="git-modal-body" id="git-diff-body"></div>
                         </div>
                     </div>
 
@@ -1327,13 +1490,6 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 // Commit button
                 $('#git-btn-commit').on('click', handleCommit);
 
-                // Stage/unstage all buttons
-                $('#git-btn-stage-all').on('click', stageAll);
-                $('#git-btn-unstage-all').on('click', unstageAll);
-
-                // Discard changes button
-                $('#git-btn-discard-changes').on('click', handleDiscardChanges);
-
                 // Modal handlers
                 $('#git-modal-close, #git-modal-overlay').on('click', closeModal);
                 $('#git-action-checkout').on('click', function() { handleCommitAction('checkout'); });
@@ -1341,6 +1497,22 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 // Blocking modal close
                 $('#git-blocking-close, #git-blocking-overlay').on('click', function() {
                     $('#git-blocking-modal').fadeOut(200);
+                });
+
+                // Diff modal close
+                $('#git-diff-close, #git-diff-overlay').on('click', function() {
+                    $('#git-diff-modal').fadeOut(150);
+                });
+
+                // Expand/collapse a node's field detail inside the diff modal
+                $('#git-diff-body').on('click', '.git-diff-node-head', function() {
+                    $(this).closest('.git-diff-node').toggleClass('open');
+                });
+
+                // Revert a single node (don't also toggle the collapse)
+                $('#git-diff-body').on('click', '.git-diff-node-revert', function(e) {
+                    e.stopPropagation();
+                    revertFlowNode($(this).attr('data-node-id'));
                 });
 
                 // Return to latest button (detached HEAD banner)
@@ -1817,183 +1989,326 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                     data: JSON.stringify({}),
                     contentType: 'application/json',
                     success: function(result) {
-                        if (result.success) {
-                            renderChanges(result.status);
-                        }
+                        if (!result.success) return;
+                        // Paint the file list immediately, then fetch and inject the
+                        // per-flow breakdown asynchronously so the panel feels snappy.
+                        renderChanges(result.status);
+                        loadFlowBreakdown(result.status);
+                    }
+                });
+            }
+
+            // Fetch the flow file's per-flow breakdown (working tree vs HEAD) and
+            // inject it under the flow file's row. Kept separate from renderChanges
+            // so the file list never waits on the (heavier) flow diff.
+            function loadFlowBreakdown(status) {
+                $('.git-flow-units').remove();
+                var flowFile = (projectInfo && projectInfo.flowFile) || 'flows.json';
+                var flowChanged = status.files && status.files.some(function(f) {
+                    return f.path === flowFile;
+                });
+                if (!flowChanged) return;
+
+                $.ajax({
+                    url: 'rosepetal-git/flow-diff',
+                    type: 'POST',
+                    data: JSON.stringify({ base: 'HEAD' }),
+                    contentType: 'application/json',
+                    success: function(diff) {
+                        var units = (diff && diff.units ? diff.units : []).filter(function(u) {
+                            return u.status !== 'unchanged';
+                        });
+                        injectFlowUnits(flowFile, units);
                     }
                 });
             }
 
             function renderChanges(status) {
-                var stagedFiles = [];
-                var unstagedFiles = [];
-
+                // Single unified list: every changed file appears once. Staging is
+                // implicit - Commit stages everything (git add -A) before committing.
+                var changedFiles = [];
                 if (status.files && Array.isArray(status.files)) {
                     status.files.forEach(function(fileObj) {
-                        // index: staging area status (' ' = no change, 'M' = modified, 'A' = added, 'D' = deleted, etc.)
-                        // working_dir: working directory status (' ' = no change, '?' = untracked)
                         var isUntracked = fileObj.index === '?' || fileObj.working_dir === '?';
-                        var hasStaged = !isUntracked && fileObj.index !== ' ';
-                        var hasUnstaged = !isUntracked && fileObj.working_dir !== ' ';
-
-
-                        // File appears in "Staged Changes" if it has staged changes
-                        if (hasStaged) {
-                            stagedFiles.push({
-                                file: fileObj.path,
-                                status: fileObj.index
-                            });
-                        }
-
-                        // File appears in "Changes" if it has unstaged changes OR is untracked
-                        if (hasUnstaged || isUntracked) {
-                            unstagedFiles.push({
-                                file: fileObj.path,
-                                status: isUntracked ? '?' : fileObj.working_dir
-                            });
-                        }
+                        // Prefer the working-tree status; fall back to the staged one.
+                        var st = isUntracked ? '?'
+                            : (fileObj.working_dir !== ' ' ? fileObj.working_dir : fileObj.index);
+                        changedFiles.push({ file: fileObj.path, status: st });
                     });
                 }
 
-
-                // Render both lists
-                renderFileList('#git-unstaged-list', unstagedFiles, 'unstaged');
-                renderFileList('#git-staged-list', stagedFiles, 'staged');
-
-                // Update counts
-                $('#git-unstaged-count').text(unstagedFiles.length);
-                $('#git-staged-count').text(stagedFiles.length);
-
-                // Update commit button state
-                updateCommitButton(stagedFiles.length);
+                renderFileList('#git-unstaged-list', changedFiles);
+                $('#git-unstaged-count').text(changedFiles.length);
+                updateCommitButton(changedFiles.length);
             }
 
-            function renderFileList(containerSelector, files, type) {
+            function renderFileList(containerSelector, files) {
                 var $list = $(containerSelector);
-                var sectionId = type === 'staged' ? '#git-staged-section' : '#git-unstaged-section';
-                var $section = $(sectionId);
+                var $section = $('#git-unstaged-section');
 
                 $list.empty();
 
                 if (files.length === 0) {
-                    $section.hide();  // Hide entire section when empty
+                    $section.hide();  // Hide section when there are no changes
                     return;
                 }
 
-                $section.show();  // Show section when there are files
+                $section.show();
 
                 files.forEach(function(fileObj) {
-                    var icon = type === 'staged' ? 'fa-minus' : 'fa-plus';
-                    var statusClass = 'git-status-' + fileObj.status.toLowerCase();
-
+                    var statusClass = 'git-status-' + String(fileObj.status).toLowerCase();
                     var $item = $('<div class="git-change-item ' + statusClass + '">');
 
                     var fileAttr = escapeAttr(fileObj.file);
                     var fileText = escapeHtml(fileObj.file);
                     var statusText = escapeHtml(fileObj.status);
 
-                    if (type === 'unstaged') {
-                        // Unstaged file: show stage button + discard button
-                        $item.html(
-                            '<button class="git-stage-btn" data-file="' + fileAttr + '" data-action="unstaged">' +
-                            '<i class="fa ' + icon + '"></i>' +
-                            '</button>' +
-                            '<span class="git-change-status">' + statusText + '</span>' +
-                            '<span class="git-change-file">' + fileText + '</span>' +
-                            '<button class="git-discard-file-btn" data-file="' + fileAttr + '" title="Discard changes">' +
-                            '<i class="fa fa-trash-o"></i>' +
-                            '</button>'
-                        );
-                    } else {
-                        // Staged file: only show unstage button (no discard)
-                        $item.html(
-                            '<button class="git-stage-btn" data-file="' + fileAttr + '" data-action="staged">' +
-                            '<i class="fa ' + icon + '"></i>' +
-                            '</button>' +
-                            '<span class="git-change-status">' + statusText + '</span>' +
-                            '<span class="git-change-file">' + fileText + '</span>'
-                        );
-                    }
+                    $item.html(
+                        '<span class="git-change-status">' + statusText + '</span>' +
+                        '<span class="git-change-file">' + fileText + '</span>' +
+                        '<button class="git-discard-file-btn" data-file="' + fileAttr + '" title="Discard changes">' +
+                        '<i class="fa fa-trash-o"></i>' +
+                        '</button>'
+                    );
 
+                    $item.attr('data-file', fileObj.file);
                     $list.append($item);
                 });
 
-                // Attach click handlers
-                $list.find('.git-stage-btn').on('click', function() {
-                    var file = $(this).data('file');
-                    var action = $(this).data('action');
-
-                    if (action === 'unstaged') {
-                        stageFile(file);
-                    } else {
-                        unstageFile(file);
-                    }
-                });
-
-                // Attach discard button handler (only for unstaged files)
                 $list.find('.git-discard-file-btn').on('click', function(e) {
                     e.stopPropagation();  // Prevent triggering parent clicks
-                    var file = $(this).data('file');
-                    discardFile(file);
+                    discardFile($(this).data('file'));
                 });
             }
 
-            function stageFile(file) {
+            // ---------- Flow-level breakdown of the flow file ----------
+
+            function flowUnitIcon(kind) {
+                if (kind === 'subflow') return 'fa-clone';
+                if (kind === 'config') return 'fa-cog';
+                return 'fa-share-alt';
+            }
+
+            function flowUnitCounts(unit) {
+                if (unit.status === 'added') return '<span class="add">new</span>';
+                if (unit.status === 'removed') return '<span class="del">deleted</span>';
+                var parts = [];
+                if (unit.counts.added) parts.push('<span class="add">+' + unit.counts.added + '</span>');
+                if (unit.counts.modified) parts.push('<span class="mod">~' + unit.counts.modified + '</span>');
+                if (unit.counts.removed) parts.push('<span class="del">-' + unit.counts.removed + '</span>');
+                return parts.join(' ');
+            }
+
+            // Dot colour reflects the nature of the change, not just the unit
+            // status: a whole new/removed flow is green/red, and so is a flow that
+            // only gained or only lost nodes; mixed edits stay orange (modified).
+            function flowUnitTone(unit) {
+                if (unit.status === 'added') return 'added';
+                if (unit.status === 'removed') return 'removed';
+                var c = unit.counts || {};
+                if (c.added && !c.modified && !c.removed) return 'added';
+                if (c.removed && !c.modified && !c.added) return 'removed';
+                return 'modified';
+            }
+
+            function buildFlowUnits(units) {
+                var $wrap = $('<div class="git-flow-units">');
+
+                units.forEach(function(unit) {
+                    var $row = $('<div class="git-flow-unit git-flow-status-' + unit.status + '">');
+                    $row.html(
+                        '<span class="git-flow-unit-status git-dot-' + flowUnitTone(unit) + '"></span>' +
+                        '<span class="git-flow-unit-icon"><i class="fa ' + flowUnitIcon(unit.kind) + '"></i></span>' +
+                        '<span class="git-flow-unit-label">' + escapeHtml(unit.label) + '</span>' +
+                        '<span class="git-flow-unit-counts">' + flowUnitCounts(unit) + '</span>' +
+                        '<button class="git-flow-unit-btn git-flow-unit-diff" title="View changes"><i class="fa fa-eye"></i></button>' +
+                        '<button class="git-flow-unit-btn git-flow-unit-revert" title="Revert this unit to the last commit"><i class="fa fa-undo"></i></button>'
+                    );
+                    $row.find('.git-flow-unit-diff').on('click', function() {
+                        openFlowUnitDiff(unit.id, unit.label);
+                    });
+                    $row.find('.git-flow-unit-revert').on('click', function() {
+                        revertFlowUnit(unit.id, unit.label);
+                    });
+                    $wrap.append($row);
+                });
+
+                return $wrap;
+            }
+
+            function findChangeRow(listSelector, file) {
+                return $(listSelector + ' .git-change-item').filter(function() {
+                    return $(this).data('file') === file;
+                }).first();
+            }
+
+            // Insert the per-flow rows right beneath the flow file's row.
+            function injectFlowUnits(flowFile, units) {
+                if (!units || !units.length) return;
+                var $row = findChangeRow('#git-unstaged-list', flowFile);
+                if (!$row.length) return;
+                $row.after(buildFlowUnits(units));
+            }
+
+            function openFlowUnitDiff(unitId, label) {
+                $('#git-diff-title').text('Changes · ' + label);
+                $('#git-diff-body').html('<div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading changes…</p></div>');
+                $('#git-diff-modal').fadeIn(150);
+
                 $.ajax({
-                    url: 'rosepetal-git/add',
+                    url: 'rosepetal-git/flow-diff',
                     type: 'POST',
-                    data: JSON.stringify({ files: [file] }),
+                    data: JSON.stringify({ base: 'HEAD', detail: true }),
                     contentType: 'application/json',
-                    success: function() {
-                        loadChanges();  // Refresh to show new state
+                    success: function(diff) {
+                        var unit = (diff.units || []).filter(function(u) { return u.id === unitId; })[0];
+                        $('#git-diff-body').html(renderUnitDiffHtml(unit));
                     },
-                    error: function(xhr) {
-                        RED.notify("Failed to stage: " + file, "error");
+                    error: function() {
+                        $('#git-diff-body').html('<p>Failed to load changes.</p>');
                     }
                 });
             }
 
-            function unstageFile(file) {
+            // Structural keys describe placement, not configuration; hidden in field diffs.
+            var DIFF_SKIP_KEYS = { id: 1, type: 1, z: 1, g: 1, x: 1, y: 1, wires: 1 };
+
+            function renderUnitDiffHtml(unit) {
+                if (!unit) return '<p>No changes.</p>';
+                var html = '';
+
+                if (unit.added && unit.added.length) {
+                    html += '<div class="git-diff-unit-section"><strong>Added (' + unit.added.length + ')</strong>';
+                    unit.added.forEach(function(n) { html += nodeBlockHtml(n, 'added', fieldsForSide(n, 'to')); });
+                    html += '</div>';
+                }
+                if (unit.removed && unit.removed.length) {
+                    html += '<div class="git-diff-unit-section"><strong>Removed (' + unit.removed.length + ')</strong>';
+                    unit.removed.forEach(function(n) { html += nodeBlockHtml(n, 'removed', fieldsForSide(n, 'from')); });
+                    html += '</div>';
+                }
+                if (unit.modified && unit.modified.length) {
+                    html += '<div class="git-diff-unit-section"><strong>Modified (' + unit.modified.length + ')</strong>';
+                    unit.modified.forEach(function(m) {
+                        html += nodeBlockHtml(m.head || {}, 'modified', diffNodeFields(m.base || {}, m.head || {}), m.id);
+                    });
+                    html += '</div>';
+                }
+
+                return html || '<p>No changes.</p>';
+            }
+
+            // Field rows for a whole added/removed node: every config field on one
+            // side. `side` is 'to' (added, green) or 'from' (removed, struck red).
+            function fieldsForSide(node, side) {
+                return Object.keys(node)
+                    .filter(function(k) { return !DIFF_SKIP_KEYS[k]; })
+                    .map(function(k) {
+                        var v = stringifyVal(node[k]);
+                        return side === 'to' ? { key: k, from: '', to: v } : { key: k, from: v, to: '' };
+                    });
+            }
+
+            function fieldRowsHtml(fields) {
+                if (!fields.length) {
+                    return '<div class="git-diff-empty">(no field-level changes)</div>';
+                }
+                var header = '<div class="git-diff-cols-header">' +
+                    '<span>Field</span><span>Before</span><span>After</span></div>';
+                var rows = fields.map(function(f) {
+                    return '<div class="git-diff-field">' +
+                        '<span class="git-diff-field-key">' + escapeHtml(f.key) + '</span>' +
+                        '<span class="git-diff-col git-diff-col-before">' + (f.from ? escapeHtml(f.from) : '') + '</span>' +
+                        '<span class="git-diff-col git-diff-col-after">' + (f.to ? escapeHtml(f.to) : '') + '</span>' +
+                        '</div>';
+                }).join('');
+                return header + rows;
+            }
+
+            // One collapsible node block: a clickable header (with a per-node
+            // revert button) plus its field detail.
+            function nodeBlockHtml(node, tone, fields, idOverride) {
+                var fullId = idOverride || node.id || '';
+                var name = node.name || node.label || '';
+                var icon = tone === 'added' ? 'fa-plus' : (tone === 'removed' ? 'fa-minus' : 'fa-pencil');
+                var title = tone === 'added' ? 'Remove this added node'
+                    : (tone === 'removed' ? 'Restore this node from the last commit'
+                    : 'Revert this node to the last commit');
+                return '<div class="git-diff-node git-diff-node-' + tone + '">' +
+                    '<div class="git-diff-node-head">' +
+                        '<i class="fa fa-chevron-right git-diff-node-chevron"></i>' +
+                        '<i class="fa ' + icon + '"></i>' +
+                        '<span class="git-diff-node-type">' + escapeHtml(node.type || '') + '</span>' +
+                        (name ? '<span>' + escapeHtml(name) + '</span>' : '') +
+                        '<span class="git-diff-node-id">' + escapeHtml(fullId.substring(0, 8)) + '</span>' +
+                        '<button class="git-diff-node-revert" data-node-id="' + escapeAttr(fullId) + '" title="' + escapeAttr(title) + '"><i class="fa fa-undo"></i></button>' +
+                    '</div>' +
+                    '<div class="git-diff-node-body">' + fieldRowsHtml(fields) + '</div>' +
+                '</div>';
+            }
+
+            function stringifyVal(v) {
+                if (v === undefined) return '(none)';
+                if (typeof v === 'string') return v;
+                var s = JSON.stringify(v);
+                return s && s.length > 200 ? s.substring(0, 200) + '…' : s;
+            }
+
+            // Top-level keys that differ between two node versions, for a readable
+            // field-level diff (full deep diff would be noisy for big nodes).
+            function diffNodeFields(base, head) {
+                var keys = {};
+                Object.keys(base).forEach(function(k) { keys[k] = true; });
+                Object.keys(head).forEach(function(k) { keys[k] = true; });
+                var out = [];
+                Object.keys(keys).forEach(function(k) {
+                    if (JSON.stringify(base[k]) !== JSON.stringify(head[k])) {
+                        out.push({ key: k, from: stringifyVal(base[k]), to: stringifyVal(head[k]) });
+                    }
+                });
+                return out;
+            }
+
+            function revertFlowNode(nodeId) {
+                if (!nodeId) return;
+                if (!confirm('Revert this node to the last commit?\n\nOnly this node changes; everything else in the flow stays as-is.')) {
+                    return;
+                }
                 $.ajax({
-                    url: 'rosepetal-git/unstage',
+                    url: 'rosepetal-git/revert-flow-nodes',
                     type: 'POST',
-                    data: JSON.stringify({ files: [file] }),
+                    data: JSON.stringify({ nodeIds: [nodeId], ref: 'HEAD' }),
                     contentType: 'application/json',
-                    success: function() {
-                        loadChanges();  // Refresh to show new state
+                    success: function(res) {
+                        if (res.warning) RED.notify(res.warning, "warning");
+                        RED.notify("Node reverted", "success");
+                        $('#git-diff-modal').fadeOut(150);
+                        reloadFlowsFromDisk(function() { loadAll(); });
                     },
                     error: function(xhr) {
-                        RED.notify("Failed to unstage: " + file, "error");
+                        var info = xhr.responseJSON || {};
+                        RED.notify("Failed to revert node: " + (info.error || "Unknown error"), "error");
                     }
                 });
             }
 
-            function stageAll() {
+            function revertFlowUnit(unitId, label) {
+                if (!confirm('Revert "' + label + '" to the last commit?\n\nThis discards uncommitted changes to this unit only. Other flows are left untouched.')) {
+                    return;
+                }
                 $.ajax({
-                    url: 'rosepetal-git/add',
+                    url: 'rosepetal-git/revert-flow-unit',
                     type: 'POST',
-                    data: JSON.stringify({ stageAll: true }),
+                    data: JSON.stringify({ unitId: unitId, ref: 'HEAD' }),
                     contentType: 'application/json',
-                    success: function() {
-                        loadChanges();
+                    success: function(res) {
+                        if (res.warning) RED.notify(res.warning, "warning");
+                        RED.notify('Reverted "' + label + '"', "success");
+                        reloadFlowsFromDisk(function() { loadAll(); });
                     },
                     error: function(xhr) {
-                        RED.notify("Failed to stage all files", "error");
-                    }
-                });
-            }
-
-            function unstageAll() {
-                $.ajax({
-                    url: 'rosepetal-git/unstage',
-                    type: 'POST',
-                    data: JSON.stringify({ unstageAll: true }),
-                    contentType: 'application/json',
-                    success: function() {
-                        loadChanges();
-                    },
-                    error: function(xhr) {
-                        RED.notify("Failed to unstage all files", "error");
+                        var info = xhr.responseJSON || {};
+                        RED.notify("Failed to revert: " + (info.error || "Unknown error"), "error");
                     }
                 });
             }
@@ -2022,16 +2337,16 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 });
             }
 
-            function updateCommitButton(stagedCount) {
+            function updateCommitButton(changeCount) {
                 var $commitPanel = $('#git-commit-panel');
                 var $commitBtn = $('#git-btn-commit');
 
-                $commitBtn.prop('disabled', stagedCount === 0);
+                $commitBtn.prop('disabled', changeCount === 0);
 
-                if (stagedCount === 0) {
-                    $commitPanel.hide();  // Hide when no staged changes
+                if (changeCount === 0) {
+                    $commitPanel.hide();  // Hide when there's nothing to commit
                 } else {
-                    $commitPanel.show();  // Show when there are staged changes
+                    $commitPanel.show();  // Show whenever there are changes
                 }
             }
 
@@ -2212,7 +2527,7 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                 $.ajax({
                     url: 'rosepetal-git/commit',
                     type: 'POST',
-                    data: JSON.stringify({ message: message }),
+                    data: JSON.stringify({ message: message, stageAll: true }),
                     contentType: 'application/json',
                     success: function(commitResult) {
                         if (commitResult.success) {
@@ -2332,10 +2647,12 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
                     data: JSON.stringify({}),
                     contentType: 'application/json',
                     success: function() {
+                        // The runtime has finished reloading by the time this fires;
+                        // a short delay just lets the toast paint before reload.
                         RED.notify("Flows reloaded from disk. Refreshing editor…", "success");
                         setTimeout(function() {
                             window.location.reload();
-                        }, 800);
+                        }, 250);
                     },
                     error: function(xhr) {
                         var info = xhr.responseJSON || {};

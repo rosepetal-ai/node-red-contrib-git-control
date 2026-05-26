@@ -4,10 +4,44 @@ The plugin exposes Git control operations via HTTP Admin API endpoints. All rout
 
 ## Authentication & Permissions
 
-- Routes honor Node-RED admin authentication when enabled
-- `GET` routes require `git-control.read` permission
-- `POST` routes require `git-control.write` permission
-- If CSRF protection is enabled, include the editor's `_csrf` token in POST requests
+- Routes honor Node-RED admin authentication when it is enabled.
+- Read-only operations require the `git-control.read` permission; mutating
+  operations require `git-control.write`. Note this is by *operation*, not HTTP
+  verb — several read-only endpoints are `POST` (they take a JSON body) but still
+  only need `read` (e.g. `status`, `branches`, `show`, `flow-diff`, `file-diff`).
+
+### Calling the API as an agent / external tool
+
+When admin auth is **disabled**, call the endpoints directly — no token needed.
+
+When admin auth is **enabled**, obtain a bearer token once and send it on every
+request:
+
+```bash
+# 1. Get a token
+curl -s http://localhost:1880/auth/token \
+  -d 'client_id=node-red-admin' \
+  -d 'grant_type=password' \
+  -d 'scope=*' \
+  -d 'username=admin' \
+  -d 'password=secret'
+# -> { "access_token": "....", "token_type": "Bearer", ... }
+
+# 2. Use it
+curl -s http://localhost:1880/rosepetal-git/project-info \
+  -H 'Authorization: Bearer <access_token>'
+```
+
+Bearer-token requests are not subject to CSRF (CSRF only guards cookie-based
+editor sessions). All POST bodies are JSON (`Content-Type: application/json`).
+
+### Danger levels
+
+| Level | Endpoints | Notes |
+|-------|-----------|-------|
+| safe (read-only) | `project-info`, `status`, `log`, `branches`, `show`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `ssh-keys` | never modify the repo |
+| writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `pull`, `merge`, `revert`, `cherry-pick`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `ssh-key` | reversible via git |
+| destructive (needs `confirmed: true`) | `force-push`, `discard-all`, `delete-branch` *(when `force: true`)*, `reset` *(hard, when `safeMode: false`)* | can discard work / rewrite history |
 
 All responses are JSON. Errors return:
 ```json
@@ -214,7 +248,10 @@ Checks out a commit or branch.
 **Important**: After checkout, the frontend must reload flows from disk to prevent data loss.
 
 #### `POST /rosepetal-git/validate-checkout`
-Validates if a checkout operation is safe (no uncommitted changes or unpushed commits).
+Validates whether a checkout is safe. The only blocker is **uncommitted working
+changes** (which a checkout could overwrite). Unpushed commits are *not* a
+blocker — switching away never loses commits a branch still points to;
+`unpushedCount` is reported for information only.
 
 **Request**
 ```json
@@ -228,7 +265,7 @@ Validates if a checkout operation is safe (no uncommitted changes or unpushed co
 {
   "success": true,
   "canCheckout": false,
-  "blockers": ["uncommitted_changes", "unpushed_commits"],
+  "blockers": ["uncommitted_changes"],
   "uncommittedCount": 3,
   "unpushedCount": 2,
   "isDetachedHead": false,
@@ -286,9 +323,14 @@ Creates a new commit. Automatically creates a branch if in detached HEAD state.
 **Request**
 ```json
 {
-  "message": "Commit message"
+  "message": "Commit message",
+  "stageAll": false
 }
 ```
+`stageAll` (optional, default `false`): when `true`, stage every change (`git add
+-A`, including untracked files and deletions) before committing. The sidebar
+sends `true` so a commit captures all current changes in one step; without it,
+only already-staged content is committed.
 
 **Response 200**
 ```json
@@ -446,6 +488,269 @@ Force pushes with `--force-with-lease` (requires confirmation).
   "warning": "Force push completed - Git history has been rewritten"
 }
 ```
+
+### Branch & Ref Operations
+
+All accept the optional `repoPath`. Refs must not begin with `-` (rejected as
+unsafe). Operations that create a commit resolve the author identity from
+Node-RED user settings or git config.
+
+#### `POST /rosepetal-git/create-branch`
+Create a branch, optionally checking it out.
+
+**Request**
+```json
+{ "name": "feature/x", "startPoint": "main", "checkout": true }
+```
+`startPoint` (optional) is any ref to branch from. `checkout` defaults to `true`.
+
+**Response 200**
+```json
+{ "success": true, "operation": "create-branch", "branch": "feature/x", "checkedOut": true, "startPoint": "main" }
+```
+
+#### `POST /rosepetal-git/orphan-branch`
+Create a branch with **no history** (`git checkout --orphan`). With
+`keepContent: true` (default) the working tree carries over so the first commit
+captures current content; `false` clears the index to start empty.
+
+**Request**
+```json
+{ "name": "clean-slate", "keepContent": true }
+```
+
+#### `POST /rosepetal-git/delete-branch`
+Delete a branch. A safe delete (`force` omitted) fails if the branch has
+unmerged commits. Force-delete requires `confirmed: true`.
+
+**Request**
+```json
+{ "name": "feature/x", "force": true, "confirmed": true }
+```
+
+#### `POST /rosepetal-git/rename-branch`
+Rename a branch. Omit `from` to rename the current branch.
+
+**Request**
+```json
+{ "from": "old-name", "to": "new-name" }
+```
+
+#### `POST /rosepetal-git/set-upstream`
+Link a local branch to a remote branch (its tracking upstream). Defaults the
+branch to the current one and the remote to `origin`.
+
+**Request**
+```json
+{ "branch": "main", "remote": "origin", "remoteBranch": "main" }
+```
+
+**Response 200**
+```json
+{ "success": true, "operation": "set-upstream", "branch": "main", "upstream": "origin/main" }
+```
+
+#### `POST /rosepetal-git/merge`
+Merge a ref into the current branch. `noFastForward: true` forces a merge commit.
+
+**Request**
+```json
+{ "ref": "feature/x", "noFastForward": false }
+```
+
+#### `POST /rosepetal-git/revert`
+Create a new commit that undoes a previous commit (`git revert`, history-safe).
+`noCommit: true` stages the revert without committing.
+
+**Request**
+```json
+{ "commitRef": "abc123", "noCommit": false }
+```
+
+#### `POST /rosepetal-git/cherry-pick`
+Apply a commit onto the current branch. `noCommit: true` stages without committing.
+
+**Request**
+```json
+{ "commitRef": "abc123", "noCommit": false }
+```
+
+#### `POST /rosepetal-git/discard-all`
+Discard **all** working changes: hard reset to `HEAD` and remove untracked files
+(`clean -fd`, respecting `.gitignore`). Requires `confirmed: true`.
+
+**Request**
+```json
+{ "confirmed": true }
+```
+
+### Diff Operations
+
+#### `POST /rosepetal-git/file-diff`
+Unified text diff for a file between two refs (or a ref and the working tree).
+
+**Request**
+```json
+{ "file": "package.json", "base": "HEAD", "head": null }
+```
+Omit `head` (or send `null`) to diff against the working tree. Omit `file` to
+diff the whole tree.
+
+**Response 200**
+```json
+{ "success": true, "operation": "file-diff", "base": "HEAD", "head": "working", "file": "package.json", "diff": "diff --git a/package.json..." }
+```
+
+#### `POST /rosepetal-git/commit-diff`
+List the files changed in a commit (name-status, vs its parent; the root commit
+lists all files as additions).
+
+**Request**
+```json
+{ "commitRef": "abc123" }
+```
+
+**Response 200**
+```json
+{ "success": true, "operation": "commit-diff", "commit": "abc123", "files": [ { "status": "M", "path": "flows.json" } ] }
+```
+
+### Flow-Aware Operations
+
+Node-RED stores all flows in a single `flows.json` (a flat array of node
+objects). These endpoints present it as logical **units** so you can diff and
+revert one flow at a time without touching the others. The file on disk stays a
+single file — the decomposition is logical.
+
+A unit is one of:
+- **flow** — a tab and every node on it (`id` = the tab's id)
+- **subflow** — a subflow definition and its internal nodes (`id` = the subflow's id)
+- **config** — all global config nodes, grouped into a single unit (`id` = `"__config__"`)
+
+A ref of the literal string `"WORKING"` (or an omitted ref) means the working
+tree on disk.
+
+#### `POST /rosepetal-git/flow-units`
+List the logical units present at a ref (or the working tree).
+
+**Request**
+```json
+{ "ref": "HEAD" }
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "operation": "flow-units",
+  "ref": "HEAD",
+  "units": [
+    { "id": "a1b2c3d4", "kind": "flow", "label": "Main", "nodeCount": 12 },
+    { "id": "e5f6...",   "kind": "subflow", "label": "Resize Image", "nodeCount": 4 },
+    { "id": "__config__", "kind": "config", "label": "Configuration", "nodeCount": 3 }
+  ]
+}
+```
+
+#### `POST /rosepetal-git/flow-diff`
+Per-unit diff between two refs (defaults: `base` = `HEAD`, `head` = working tree).
+Each unit reports a `status` (`added` / `removed` / `modified` / `unchanged`) and
+the nodes added/removed/modified within it. Pass `detail: true` to include full
+node bodies (base + head for modified nodes) instead of summaries.
+
+**Request**
+```json
+{ "base": "HEAD", "head": null, "detail": false }
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "operation": "flow-diff",
+  "base": "HEAD",
+  "head": "working",
+  "changed": 1,
+  "units": [
+    {
+      "id": "a1b2c3d4",
+      "kind": "flow",
+      "label": "Main",
+      "status": "modified",
+      "counts": { "added": 1, "removed": 0, "modified": 2 },
+      "added":   [ { "id": "n9", "type": "function", "name": "transform" } ],
+      "removed": [],
+      "modified": [ { "id": "n2", "type": "mqtt out" } ]
+    }
+  ]
+}
+```
+
+To see what a past commit changed at flow level, diff it against its parent:
+`{ "base": "abc123^", "head": "abc123" }`.
+
+#### `POST /rosepetal-git/revert-flow-unit`
+Revert a single unit to its version at `ref`, leaving every other unit untouched.
+Writes the working `flows.json` but does **not** commit — the result shows up as a
+normal working-tree change to review and commit (or reload via the flow-reload
+pattern below).
+
+**Request**
+```json
+{ "unitId": "a1b2c3d4", "ref": "HEAD", "includeDependencies": false }
+```
+
+If the reverted flow references config nodes or subflows that differ, they are
+reported under `dependencies`. Set `includeDependencies: true` to also revert
+those units (the whole `config` unit is reverted if any config node is referenced).
+
+**Response 200**
+```json
+{
+  "success": true,
+  "operation": "revert-flow-unit",
+  "unitId": "a1b2c3d4",
+  "ref": "HEAD",
+  "revertedUnits": ["a1b2c3d4"],
+  "dependencies": {
+    "config":   [ { "id": "c1", "type": "mqtt-broker" } ],
+    "subflows": [ { "id": "e5f6...", "label": "Resize Image" } ]
+  },
+  "file": "flows.json",
+  "warning": "The reverted flow references config/subflow units that were not reverted; they may be out of sync."
+}
+```
+
+**Important**: After a flow revert, reload flows from disk (see Flow Reload
+Pattern) so the editor and runtime pick up the change.
+
+#### `POST /rosepetal-git/revert-flow-nodes`
+Revert individual nodes (by id) to their version at `ref`, leaving the rest of
+the flow file untouched. A modified node is reset, a node added in the working
+tree is removed, and a deleted node is re-added. Writes the working `flows.json`
+without committing.
+
+**Request**
+```json
+{ "nodeIds": ["abc123", "def456"], "ref": "HEAD" }
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "operation": "revert-flow-nodes",
+  "nodeIds": ["abc123"],
+  "ref": "HEAD",
+  "file": "flows.json",
+  "dependencies": { "config": [], "subflows": [] },
+  "warning": null
+}
+```
+
+Like a flow revert, this can leave a dangling wire/config reference if you revert
+a node but not what it points to; `dependencies` reports referenced config/subflow
+units. Reload flows from disk afterward.
 
 ## Error Handling
 
