@@ -576,97 +576,228 @@
     background-color: #27AE60;
 }
 
-/* Graph Container */
+/* Commit list (DOM-rendered graph + rail) */
 .git-graph-container {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 200px;
     position: relative;
-    background-color: #f6f8fa;
+    background-color: var(--red-ui-secondary-background, #fff);
     width: 100%;
     box-sizing: border-box;
+    /* Background the rail dots punch through, so lines read as "behind" them. */
+    --rail-bg: var(--red-ui-secondary-background, #fff);
 }
 
-#git-graph-canvas {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-}
+.git-commit-list { width: 100%; }
 
-/* Graph Tooltip */
-.git-graph-tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    max-width: 300px;
-    word-wrap: break-word;
-    pointer-events: none;
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.git-graph-tooltip strong {
-    font-family: monospace;
-    color: #4A90E2;
-}
-
-/* Legacy commit list styles */
-.git-commits-list {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 200px;
-}
-
-.git-commit-item {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.git-commit-item:hover {
-    background-color: var(--red-ui-secondary-background-hover, #f5f5f5);
-}
-
-.git-commit-header {
+.git-commit-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
+    align-items: stretch;
+    min-height: 56px;
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #eee);
+    cursor: pointer;
+    box-sizing: border-box;
 }
 
-.git-commit-hash {
+.git-commit-row:hover { background-color: var(--red-ui-secondary-background-hover, #f5f5f5); }
+.git-commit-row.open { background-color: var(--red-ui-secondary-background-selected, var(--red-ui-secondary-background-hover, #eef3fb)); }
+
+.git-commit-rail {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+    padding-left: 6px;
+}
+
+.git-rail-svg { display: block; }
+/* Dot stroke matches the panel bg so it "punches through" the rail lines. */
+.git-rail-dot { stroke: var(--rail-bg, #fff); }
+
+.git-commit-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 12px 6px 8px;
+}
+
+.git-commit-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.git-commit-hashtag {
     font-family: monospace;
     font-size: 11px;
-    color: #666;
-    background-color: #f0f0f0;
-    padding: 2px 6px;
+    color: var(--red-ui-text-color-secondary, #666);
+    background-color: var(--red-ui-secondary-background-inactive, #f0f0f0);
+    padding: 1px 5px;
     border-radius: 3px;
+    flex-shrink: 0;
 }
 
-.git-commit-time {
-    font-size: 11px;
-    color: #999;
-}
-
-.git-commit-message {
+.git-commit-row-msg {
     font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 4px;
     color: var(--red-ui-text-color, #333);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
-.git-commit-author {
-    font-size: 11px;
-    color: #666;
+.git-head-chip {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #fff;
+    background: #27AE60;
+    padding: 1px 5px;
+    border-radius: 8px;
 }
+
+.git-commit-row-bottom { display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+.git-commit-row-meta {
+    font-size: 11px;
+    color: var(--red-ui-text-color-secondary, #999);
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.git-branch-chip {
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    background: #2196F3;
+    padding: 1px 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Expanded commit detail (inline, below the clicked row) */
+.git-commit-detail {
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
+    background: var(--red-ui-secondary-background-inactive, #fafafa);
+    padding: 10px 12px 12px;
+    font-size: 12px;
+}
+
+.git-commit-detail-meta { color: var(--red-ui-text-color, #333); line-height: 1.6; word-break: break-all; }
+.git-commit-detail-meta .k {
+    display: inline-block;
+    min-width: 52px;
+    color: var(--red-ui-text-color-secondary, #888);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+}
+.git-mono { font-family: monospace; }
+.git-commit-detail-msg { margin-top: 6px; white-space: pre-wrap; color: var(--red-ui-text-color, #333); }
+
+.git-commit-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0;
+    padding: 10px 0;
+    border-top: 1px solid var(--red-ui-secondary-border-color, #eee);
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #eee);
+}
+
+.git-commit-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid var(--red-ui-form-input-border-color, #ccc);
+    background: var(--red-ui-secondary-background, #fff);
+    color: var(--red-ui-text-color, #333);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+.git-commit-action:hover { background: var(--red-ui-secondary-background-hover, #f0f0f0); border-color: #4285f4; }
+.git-commit-action-danger { color: #c62828; border-color: #ffcdd2; }
+.git-commit-action-danger:hover { background: #ffebee; border-color: #ef5350; }
+
+.git-commit-detail-section { margin-top: 10px; }
+.git-commit-detail-subhead {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--red-ui-text-color-secondary, #666);
+    margin-bottom: 6px;
+}
+.git-detail-sub {
+    font-weight: 400;
+    text-transform: none;
+    color: var(--red-ui-text-color-subdued, #999);
+    font-family: monospace;
+}
+.git-commit-detail .git-flow-units {
+    border-top: none;
+    background: transparent;
+    border: 1px solid var(--red-ui-secondary-border-color, #e8e8e8);
+    border-radius: 4px;
+}
+
+/* Changed-files list inside commit detail */
+.git-file-list {
+    border: 1px solid var(--red-ui-secondary-border-color, #e8e8e8);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.git-file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #efefef);
+}
+.git-file-row:last-child { border-bottom: none; }
+.git-file-row:hover { background: var(--red-ui-secondary-background-hover, #f0f0f0); }
+.git-file-status {
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 11px;
+}
+.git-fs-a { color: #2e7d32; }
+.git-fs-m { color: #e65100; }
+.git-fs-d { color: #c62828; }
+.git-fs-r { color: #1565c0; }
+.git-file-path {
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--red-ui-text-color, #333);
+}
+
+/* Unified text diff (file diff modal) */
+.git-unified-diff {
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    border: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
+    border-radius: 4px;
+    overflow-x: auto;
+}
+.git-diff-line { white-space: pre; padding: 0 8px; }
+.git-diff-line.dl-add { background: rgba(46, 125, 50, 0.10); color: #2e7d32; }
+.git-diff-line.dl-del { background: rgba(198, 40, 40, 0.09); color: #c62828; }
+.git-diff-line.dl-hunk { background: var(--red-ui-secondary-background-inactive, #f0f0f0); color: var(--red-ui-text-color-secondary, #666); }
+.git-diff-line.dl-file { color: var(--red-ui-text-color-secondary, #888); }
 
 /* ==================== Empty & Loading States ==================== */
 
@@ -773,29 +904,6 @@
     padding: 20px;
 }
 
-.git-commit-details {
-    padding: 16px;
-    background-color: var(--red-ui-secondary-background-inactive, #f9f9f9);
-    border-radius: 4px;
-    margin-bottom: 16px;
-}
-
-.git-commit-detail-item {
-    margin-bottom: 8px;
-    font-size: 13px;
-    word-break: break-all;
-}
-
-.git-commit-detail-item:last-child {
-    margin-bottom: 0;
-}
-
-.git-commit-detail-item strong {
-    display: inline-block;
-    min-width: 80px;
-    color: var(--red-ui-text-color-secondary, #666);
-}
-
 .git-modal-actions {
     display: flex;
     flex-direction: column;
@@ -873,24 +981,24 @@
 
 /* ==================== Scrollbar Styling ==================== */
 
-.git-commits-list::-webkit-scrollbar,
+.git-graph-container::-webkit-scrollbar,
 .git-changes-list::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-.git-commits-list::-webkit-scrollbar-track,
+.git-graph-container::-webkit-scrollbar-track,
 .git-changes-list::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.git-commits-list::-webkit-scrollbar-thumb,
+.git-graph-container::-webkit-scrollbar-thumb,
 .git-changes-list::-webkit-scrollbar-thumb {
     background: var(--red-ui-secondary-border-color, #ccc);
     border-radius: 4px;
 }
 
-.git-commits-list::-webkit-scrollbar-thumb:hover,
+.git-graph-container::-webkit-scrollbar-thumb:hover,
 .git-changes-list::-webkit-scrollbar-thumb:hover {
     background: var(--red-ui-secondary-border-color-hover, #999);
 }
@@ -925,22 +1033,8 @@ body.red-ui-theme-midnight .git-modal-content {
     border-color: #444;
 }
 
-body.red-ui-theme-midnight .git-commit-item {
-    border-color: #444;
-}
-
-body.red-ui-theme-midnight .git-commit-item:hover,
 body.red-ui-theme-midnight .git-change-item:hover {
     background-color: #3d3d3d;
-}
-
-body.red-ui-theme-midnight .git-commit-hash {
-    background-color: #3d3d3d;
-    color: #aaa;
-}
-
-body.red-ui-theme-midnight .git-commit-details {
-    background-color: #1e1e1e;
 }
 
 body.red-ui-theme-midnight .git-action-btn {
@@ -982,6 +1076,21 @@ body.red-ui-theme-midnight .git-discard-btn:hover {
 body.red-ui-theme-midnight .git-diff-cols-header { background: #1e1e1e; }
 body.red-ui-theme-midnight .git-diff-col-before { background: rgba(229, 115, 115, 0.16); color: #ff8a80; }
 body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132, 0.16); color: #b9f6ca; }
+
+/* Commit list + detail on dark backgrounds (rail dots punch through with --rail-bg) */
+body.red-ui-theme-midnight .git-graph-container { background-color: #1e1e1e; --rail-bg: #1e1e1e; }
+body.red-ui-theme-midnight .git-commit-row { border-color: #333; }
+body.red-ui-theme-midnight .git-commit-row:hover,
+body.red-ui-theme-midnight .git-commit-row.open { background-color: #2a2a2a; }
+body.red-ui-theme-midnight .git-commit-hashtag { background-color: #3d3d3d; color: #aaa; }
+body.red-ui-theme-midnight .git-commit-detail { background: #232323; border-color: #333; }
+body.red-ui-theme-midnight .git-commit-action { background: #2d2d2d; color: #ddd; border-color: #444; }
+body.red-ui-theme-midnight .git-commit-action:hover { background: #3d3d3d; }
+body.red-ui-theme-midnight .git-commit-action-danger { color: #ef5350; border-color: #5a2a2a; }
+body.red-ui-theme-midnight .git-commit-action-danger:hover { background: #3d1e1e; }
+body.red-ui-theme-midnight .git-diff-line.dl-add { background: rgba(129, 199, 132, 0.14); color: #b9f6ca; }
+body.red-ui-theme-midnight .git-diff-line.dl-del { background: rgba(229, 115, 115, 0.14); color: #ff8a80; }
+body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: #bbb; }
 
 /* ==================== Warning Banner ==================== */
 
@@ -1056,6 +1165,27 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
 .git-warning-action:active {
     transform: translateY(0);
 }
+
+/* Conflict / in-progress banner: red variant of the warning banner */
+.git-conflict-banner {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-color: #e53935;
+    border-left-color: #c62828;
+    align-items: flex-start;
+}
+.git-conflict-banner .git-warning-content > i { color: #e53935; }
+.git-conflict-banner .git-warning-text strong { color: #b71c1c; }
+.git-conflict-files {
+    margin-top: 6px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #c62828;
+    max-height: 96px;
+    overflow-y: auto;
+}
+.git-conflict-files > div { word-break: break-all; }
+.git-conflict-abort { background-color: #e53935; }
+.git-conflict-abort:hover { background-color: #c62828; }
 
 /* ==================== Error Modal Styles ==================== */
 
@@ -1137,14 +1267,14 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
 /* Ensure all content respects container width */
 .git-section-header,
 .git-change-item,
-.git-commit-item {
+.git-commit-row {
     width: 100%;
     box-sizing: border-box;
 }
 
 /* Handle text overflow gracefully */
 .git-commit-message,
-.git-commit-hash,
+.git-commit-hashtag,
 .git-change-file {
     max-width: 100%;
 }
@@ -1255,6 +1385,22 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                         </button>
                     </div>
 
+                    <!-- Conflict / in-progress operation Banner -->
+                    <div class="git-warning-banner git-conflict-banner" id="git-conflict-banner" style="display: none;">
+                        <div class="git-warning-content">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <div class="git-warning-text">
+                                <strong id="git-conflict-title">MERGE CONFLICT</strong>
+                                <p id="git-conflict-text"></p>
+                                <div class="git-conflict-files" id="git-conflict-files"></div>
+                            </div>
+                        </div>
+                        <button class="git-warning-action git-conflict-abort" id="git-conflict-abort">
+                            <i class="fa fa-times-circle"></i>
+                            <span>Abort</span>
+                        </button>
+                    </div>
+
                     <!-- Branch Section -->
                     <div class="git-branch-section">
                         <div class="git-branch-current">
@@ -1321,30 +1467,7 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                                 <p>Loading commits...</p>
                             </div>
 
-                            <canvas id="git-graph-canvas"></canvas>
-                            <div id="git-graph-tooltip" class="git-graph-tooltip" style="display: none;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Commit Actions Modal -->
-                    <div class="git-modal" id="git-commit-modal" style="display: none;">
-                        <div class="git-modal-overlay" id="git-modal-overlay"></div>
-                        <div class="git-modal-content">
-                            <div class="git-modal-header">
-                                <h4>Switch to Commit</h4>
-                                <button class="git-modal-close" id="git-modal-close">
-                                    <i class="fa fa-times"></i>
-                                </button>
-                            </div>
-                            <div class="git-modal-body">
-                                <div class="git-commit-details" id="git-modal-commit-details"></div>
-                                <div class="git-modal-actions">
-                                    <button class="git-action-btn git-action-primary" id="git-action-checkout">
-                                        <i class="fa fa-code-fork"></i>
-                                        <span>Switch to this commit</span>
-                                    </button>
-                                </div>
-                            </div>
+                            <div class="git-commit-list" id="git-commit-list"></div>
                         </div>
                     </div>
 
@@ -1386,10 +1509,13 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
             content.html(html);
 
             // Global state
-            var currentCommit = null;
             var allCommits = [];
             var currentBranch = '';
             var projectInfo = null;
+            // Hash of the commit whose inline detail panel is open (so it survives a refresh).
+            var expandedHash = null;
+            // Which ref a node/unit revert inside the diff modal targets, set when the modal opens.
+            var currentDiffCtx = { ref: 'HEAD', verb: 'revert' };
 
             // Escape untrusted text (file paths, commit messages, authors) before
             // inserting into HTML / attributes, to avoid breakage and injection.
@@ -1430,44 +1556,9 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
             loadBranches();
             loadChanges();
 
-            // Try to load commits when container is ready (retry until visible or max attempts)
-            var loadCommitsAttempts = 0;
-            var maxLoadAttempts = 20; // Try for up to 2 seconds
-            var loadCommitsInterval = setInterval(function() {
-                var $container = $('#git-graph-container');
-                var width = $container.width();
-                var visible = $container.is(':visible');
-                loadCommitsAttempts++;
-
-
-                // If container is visible and has width, load commits and stop trying
-                if (visible && width > 0) {
-                    clearInterval(loadCommitsInterval);
-                    loadCommits(50);
-                }
-
-                // Give up after max attempts
-                if (loadCommitsAttempts >= maxLoadAttempts) {
-                    clearInterval(loadCommitsInterval);
-                }
-            }, 100);
-
-            // Add resize observer to redraw canvas when sidebar width changes
-            var resizeTimeout;
-            var graphContainer = document.getElementById('git-graph-container');
-            if (graphContainer && window.ResizeObserver) {
-                var resizeObserver = new ResizeObserver(function(entries) {
-                    // Debounce resize events
-                    clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(function() {
-                        // Only redraw if we have commits loaded
-                        if (allCommits && allCommits.length > 0) {
-                            renderCommitGraph(allCommits);
-                        }
-                    }, 150);
-                });
-                resizeObserver.observe(graphContainer);
-            }
+            // The commit list is DOM, so it renders into a hidden/zero-width
+            // container fine - no need to wait for layout (the old canvas did).
+            loadCommits(50);
 
             // Listen to Node-RED deploy events to refresh immediately
             RED.events.on("deploy", function() {
@@ -1489,10 +1580,6 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
 
                 // Commit button
                 $('#git-btn-commit').on('click', handleCommit);
-
-                // Modal handlers
-                $('#git-modal-close, #git-modal-overlay').on('click', closeModal);
-                $('#git-action-checkout').on('click', function() { handleCommitAction('checkout'); });
 
                 // Blocking modal close
                 $('#git-blocking-close, #git-blocking-overlay').on('click', function() {
@@ -1529,6 +1616,17 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                         });
                     }
                 });
+
+                // Abort the in-progress merge/cherry-pick/revert/rebase (conflict banner)
+                $('#git-conflict-abort').on('click', function() {
+                    var kind = (projectInfo && projectInfo.mergeState && projectInfo.mergeState.kind) || 'operation';
+                    if (!confirm('Abort the in-progress ' + kind + '?\n\nThis returns the repo to the state before it started. Any conflict resolutions you have not committed will be lost.')) {
+                        return;
+                    }
+                    executeGitOperation('abort', {}, function() {
+                        reloadFlowsFromDisk(function() { loadAll(); });
+                    });
+                });
             }
 
             function loadAll() {
@@ -1562,12 +1660,40 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                             } else {
                                 $('#git-detached-head-banner').slideUp(200);
                             }
+
+                            renderConflictBanner(result);
                         }
                     },
                     error: function(xhr) {
                         RED.notify("Failed to load project info", "error");
                     }
                 });
+            }
+
+            // Safety-net banner: when a merge/cherry-pick/revert/rebase is mid-flight
+            // (usually after a conflict), list the conflicted files and offer Abort.
+            function renderConflictBanner(info) {
+                var ms = info.mergeState || {};
+                var conflicted = info.conflicted || [];
+                if (!ms.inProgress && conflicted.length === 0) {
+                    $('#git-conflict-banner').slideUp(150);
+                    return;
+                }
+
+                var kind = ms.kind || 'merge';
+                if (conflicted.length) {
+                    $('#git-conflict-title').text(kind.toUpperCase().replace('-', ' ') + ' CONFLICT');
+                    $('#git-conflict-text').text(conflicted.length + ' file(s) have conflicts. Resolve them in your editor or on the command line, then commit — or abort to undo this ' + kind + '.');
+                    $('#git-conflict-files').html(conflicted.map(function(f) {
+                        return '<div>' + escapeHtml(f) + '</div>';
+                    }).join(''));
+                } else {
+                    $('#git-conflict-title').text(kind.toUpperCase().replace('-', ' ') + ' IN PROGRESS');
+                    $('#git-conflict-text').text('A ' + kind + ' is in progress. Commit to finish it, or abort to undo it.');
+                    $('#git-conflict-files').empty();
+                }
+                $('#git-conflict-abort span').text('Abort ' + kind);
+                $('#git-conflict-banner').slideDown(150);
             }
 
             function updateSyncIndicators(ahead, behind, hasTracking) {
@@ -1592,6 +1718,8 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
 
                 if (!hasTracking) {
                     $pushBtn.attr('title', 'Push to publish this branch');
+                } else if (ahead > 0 && behind > 0) {
+                    $pushBtn.attr('title', 'Branch has diverged from remote — push will offer a force-push or you can pull first');
                 } else {
                     $pushBtn.attr('title', 'Push to remote');
                 }
@@ -1623,9 +1751,8 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
             }
 
             function loadCommits(maxCount) {
-                // Show loading state
                 $('#git-commits-loading').show();
-                $('#git-graph-canvas').hide();
+                $('#git-commit-list').hide();
 
                 $.ajax({
                     url: 'rosepetal-git/log',
@@ -1633,353 +1760,412 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                     data: JSON.stringify({ maxCount: maxCount || 50 }),
                     contentType: 'application/json',
                     success: function(result) {
-                        // Hide loading state
-                        $('#git-commits-loading').hide();
-                        $('#git-graph-canvas').show();
-
                         if (result.success) {
                             allCommits = result.commits;
-                            renderCommitGraph(result.commits);
+                            renderCommitList(result.commits);
                         }
                     },
                     error: function(xhr) {
-                        // Hide loading and show error
                         $('#git-commits-loading').hide();
-                        var $container = $('#git-graph-container');
-                        $container.find('canvas, .git-graph-tooltip').remove();
-                        $container.append('<div class="git-empty-state"><i class="fa fa-exclamation-triangle"></i><p>Failed to load commits</p></div>');
+                        $('#git-commit-list').show().html('<div class="git-empty-state"><i class="fa fa-exclamation-triangle"></i><p>Failed to load commits</p></div>');
                     }
                 });
             }
 
-            function renderCommitGraph(commits) {
-                var $container = $('#git-graph-container');
+            // ---------- Commit list (DOM graph + SVG rail) ----------
 
-                if (commits.length === 0) {
-                    // Hide loading and remove canvas/tooltip, show empty state
-                    $('#git-commits-loading').hide();
-                    $container.find('canvas, .git-graph-tooltip').remove();
-                    if ($container.find('.git-empty-state').length === 0) {
-                        $container.append('<div class="git-empty-state"><i class="fa fa-info-circle"></i><p>No commits</p></div>');
+            // Rail geometry. Each row owns a fixed-height SVG band; bands stack
+            // edge-to-edge so vertical lines join across rows. Lane x positions
+            // are global (driven by laneCount) so every row's body aligns.
+            var RAIL_LANE_W = 18, RAIL_ROW_H = 56, RAIL_DOT_R = 5, RAIL_LINE = '#8a94a6';
+            var EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'; // git's empty tree, used as a root commit's "before".
+
+            function railLaneX(lane) { return lane * RAIL_LANE_W + RAIL_LANE_W / 2; }
+
+            // Assign each commit (newest-first) a lane, tracking which lanes pass
+            // through / merge into / branch out of each row. A lane "holds" the
+            // hash of the parent it is waiting to reach; when a commit matches, the
+            // lane connects down into it. The first parent continues the commit's
+            // lane; extra parents open new lanes (merges).
+            function computeLanes(commits) {
+                var rows = [];
+                var lanes = []; // lanes[i] = parent hash this column is waiting for, or null when free
+
+                function freeLane() {
+                    for (var i = 0; i < lanes.length; i++) {
+                        if (lanes[i] == null) return i;
                     }
+                    lanes.push(null);
+                    return lanes.length - 1;
+                }
+
+                commits.forEach(function(commit) {
+                    // Lanes already waiting for this commit (its children, drawn above).
+                    var incoming = [];
+                    var myLane = -1;
+                    for (var i = 0; i < lanes.length; i++) {
+                        if (lanes[i] === commit.hash) {
+                            if (myLane === -1) myLane = i;
+                            incoming.push(i);
+                        }
+                    }
+                    if (myLane === -1) myLane = freeLane(); // a tip: nothing pointed here yet
+
+                    var lanesBefore = lanes.slice();
+                    // Merged-in duplicate lanes end at this commit.
+                    incoming.forEach(function(l) { if (l !== myLane) lanes[l] = null; });
+
+                    var parents = commit.parents || [];
+                    var parentLanes = {};
+                    if (parents.length === 0) {
+                        lanes[myLane] = null; // root commit: the lane ends here
+                    } else {
+                        lanes[myLane] = parents[0];
+                        parentLanes[parents[0]] = myLane;
+                        for (var p = 1; p < parents.length; p++) {
+                            var nl = freeLane();
+                            lanes[nl] = parents[p];
+                            parentLanes[parents[p]] = nl;
+                        }
+                    }
+
+                    rows.push({
+                        commit: commit,
+                        lane: myLane,
+                        incoming: incoming,
+                        lanesBefore: lanesBefore,
+                        lanesAfter: lanes.slice(),
+                        parentLanes: parentLanes
+                    });
+                });
+
+                var laneCount = 1;
+                rows.forEach(function(r) {
+                    laneCount = Math.max(laneCount, r.lanesBefore.length, r.lanesAfter.length, r.lane + 1);
+                });
+                return { rows: rows, laneCount: laneCount };
+            }
+
+            // Build one row's rail as an inline SVG: pass-through lanes, the commit's
+            // own segment, merge curves in, branch curves out, then the dot on top.
+            function railSvg(row, laneCount) {
+                var W = Math.max(1, laneCount) * RAIL_LANE_W;
+                var H = RAIL_ROW_H, cy = H / 2, cx = railLaneX(row.lane);
+                var parts = [];
+                function seg(x1, y1, x2, y2) {
+                    parts.push('<path d="M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 + '" stroke="' + RAIL_LINE + '" stroke-width="2" fill="none"/>');
+                }
+                function curve(x1, y1, x2, y2) {
+                    var my = (y1 + y2) / 2;
+                    parts.push('<path d="M' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + my + ' ' + x2 + ' ' + my + ' ' + x2 + ' ' + y2 + '" stroke="' + RAIL_LINE + '" stroke-width="2" fill="none"/>');
+                }
+
+                var n = Math.max(row.lanesBefore.length, row.lanesAfter.length);
+                for (var i = 0; i < n; i++) {
+                    if (i === row.lane) continue;
+                    var before = row.lanesBefore[i] != null;
+                    var after = row.lanesAfter[i] != null;
+                    var isIncoming = row.incoming.indexOf(i) !== -1;
+                    if (before && after && !isIncoming) seg(railLaneX(i), 0, railLaneX(i), H); // straight through
+                }
+
+                // Commit's own lane: line up from the top if a child connected here,
+                // line down to the bottom if the first parent continues.
+                if (row.lanesBefore[row.lane] != null && row.incoming.indexOf(row.lane) !== -1) seg(cx, 0, cx, cy);
+                if (row.lanesAfter[row.lane] != null) seg(cx, cy, cx, H);
+
+                row.incoming.forEach(function(i) { if (i !== row.lane) curve(railLaneX(i), 0, cx, cy); });
+                Object.keys(row.parentLanes).forEach(function(h) {
+                    var pl = row.parentLanes[h];
+                    if (pl !== row.lane) curve(cx, cy, railLaneX(pl), H);
+                });
+
+                var fill = row.commit.pushed ? '#4A90E2' : '#9B59B6'; // legend: pushed / unpushed
+                // Stroke is set in CSS (.git-rail-dot) so it can use the --rail-bg
+                // custom property - var() doesn't resolve in a presentation attribute.
+                var dot = '<circle class="git-rail-dot" cx="' + cx + '" cy="' + cy + '" r="' + RAIL_DOT_R + '" fill="' + fill + '" stroke-width="2"/>';
+                var head = row.commit.isHead
+                    ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + (RAIL_DOT_R + 3) + '" fill="none" stroke="#27AE60" stroke-width="2"/>'
+                    : '';
+                return '<svg class="git-rail-svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + parts.join('') + dot + head + '</svg>';
+            }
+
+            function renderCommitList(commits) {
+                var $list = $('#git-commit-list');
+                $('#git-commits-loading').hide();
+                $list.show().empty();
+
+                if (!commits || commits.length === 0) {
+                    $list.html('<div class="git-empty-state"><i class="fa fa-info-circle"></i><p>No commits</p></div>');
                     return;
                 }
 
-                // Remove any empty state
-                $container.find('.git-empty-state').remove();
+                var layout = computeLanes(commits);
+                layout.rows.forEach(function(row) {
+                    var c = row.commit;
+                    var $row = $('<div class="git-commit-row">').attr('data-hash', c.hash);
+                    if (c.isHead) $row.addClass('head');
 
-                // Recreate canvas and tooltip if they don't exist
-                if ($container.find('canvas').length === 0) {
-                    $container.append('<canvas id="git-graph-canvas"></canvas>');
-                }
-                if ($container.find('.git-graph-tooltip').length === 0) {
-                    $container.append('<div id="git-graph-tooltip" class="git-graph-tooltip" style="display: none;"></div>');
-                }
+                    var chips = (c.branches || []).map(function(b) {
+                        return '<span class="git-branch-chip">' + escapeHtml(b) + '</span>';
+                    }).join('');
 
-                var canvas = document.getElementById('git-graph-canvas');
-                var ctx = canvas.getContext('2d');
-                var tooltip = $('#git-graph-tooltip');
+                    $row.html(
+                        '<div class="git-commit-rail">' + railSvg(row, layout.laneCount) + '</div>' +
+                        '<div class="git-commit-body">' +
+                            '<div class="git-commit-row-top">' +
+                                '<span class="git-commit-hashtag">' + escapeHtml(c.hash.substring(0, 7)) + '</span>' +
+                                '<span class="git-commit-row-msg">' + escapeHtml(c.message) + '</span>' +
+                                (c.isHead ? '<span class="git-head-chip">HEAD</span>' : '') +
+                            '</div>' +
+                            '<div class="git-commit-row-bottom">' +
+                                chips +
+                                '<span class="git-commit-row-meta">' + escapeHtml(c.author) + ' • ' + escapeHtml(getRelativeTime(c.date)) + '</span>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                    $row.on('click', function() { toggleCommitDetail(c, $row); });
+                    $list.append($row);
 
-                // Ensure canvas is visible and loading is hidden
-                $('#git-graph-canvas').show();
-                $('#git-commits-loading').hide();
-
-                // Layout constants
-                var ROW_HEIGHT = 75;  // Increased for card spacing
-                var GRAPH_WIDTH = 100;  // Width for graph visualization
-                var NODE_RADIUS = 6;
-                var LINE_WIDTH = 2;
-                var CARD_HEIGHT = 65;
-                var CARD_PADDING = 5;
-
-                // Calculate canvas size
-                var containerWidth = $container.width();
-                var canvasHeight = commits.length * ROW_HEIGHT + 40;
-
-                // Set canvas size (use device pixel ratio for crisp rendering)
-                var dpr = window.devicePixelRatio || 1;
-                canvas.width = containerWidth * dpr;
-                canvas.height = canvasHeight * dpr;
-                canvas.style.width = containerWidth + 'px';
-                canvas.style.height = canvasHeight + 'px';
-                ctx.scale(dpr, dpr);
-
-                // Calculate graph layout (assign column positions to commits)
-                var layout = calculateGraphLayout(commits);
-
-                // Track hover state for visual feedback
-                var hoveredCommitIndex = -1;
-
-                // Function to render visible commits only
-                function renderVisibleCommits(hoverIndex) {
-                    // Get viewport bounds
-                    var scrollTop = $container.scrollTop();
-                    var viewportHeight = $container.height();
-                    var visibleStart = Math.max(0, Math.floor((scrollTop - ROW_HEIGHT) / ROW_HEIGHT));
-                    var visibleEnd = Math.min(commits.length, Math.ceil((scrollTop + viewportHeight + ROW_HEIGHT) / ROW_HEIGHT));
-
-                    // Clear canvas
-                    ctx.clearRect(0, 0, containerWidth, canvasHeight);
-
-                    // Draw commit cards first (background layer)
-                    for (var i = visibleStart; i < visibleEnd; i++) {
-                        var y = i * ROW_HEIGHT + 37;
-                        var isHovered = (hoverIndex !== undefined ? hoverIndex : hoveredCommitIndex) === i;
-                        drawCommitCard(ctx, y, containerWidth, isHovered);
+                    // Re-open the previously expanded commit after a refresh.
+                    if (expandedHash === c.hash) {
+                        $row.addClass('open');
+                        $list.append(buildCommitDetail(c));
                     }
+                });
+            }
 
-                    // Draw connections for visible commits
-                    for (var i = visibleStart; i < visibleEnd; i++) {
-                        var commit = commits[i];
-                        var y = i * ROW_HEIGHT + 37;
-                        var x = GRAPH_WIDTH / 2 + layout[commit.hash].column * 20;
+            // Expand/collapse the inline detail panel for a commit. The panel is a
+            // sibling appended after the row (not nested), so it never disturbs the
+            // rail alignment of the rows themselves.
+            function toggleCommitDetail(commit, $row) {
+                var $next = $row.next('.git-commit-detail');
+                if ($next.length) {
+                    $next.remove();
+                    $row.removeClass('open');
+                    expandedHash = null;
+                    return;
+                }
+                $('.git-commit-detail').remove();
+                $('.git-commit-row.open').removeClass('open');
+                expandedHash = commit.hash;
+                $row.addClass('open');
+                $row.after(buildCommitDetail(commit));
+            }
 
-                        // Draw lines to parent commits
-                        commit.parents.forEach(function(parentHash) {
-                            var parentIndex = commits.findIndex(function(c) { return c.hash === parentHash; });
-                            if (parentIndex !== -1) {
-                                var parentY = parentIndex * ROW_HEIGHT + 37;
-                                var parentX = GRAPH_WIDTH / 2 + layout[parentHash].column * 20;
-                                drawConnection(ctx, x, y, parentX, parentY);
-                            }
+            function buildCommitDetail(commit) {
+                // "Before" for this commit is its first parent; a root commit has
+                // none, so diff against the empty tree (everything shows as added).
+                var base = (commit.parents && commit.parents.length) ? commit.parents[0] : EMPTY_TREE;
+                var shortBase = base === EMPTY_TREE ? '(root)' : base.substring(0, 7);
+
+                var $d = $('<div class="git-commit-detail">');
+                $d.html(
+                    '<div class="git-commit-detail-meta">' +
+                        '<div><span class="k">commit</span> <span class="git-mono">' + escapeHtml(commit.hash) + '</span> ' +
+                            '<button class="git-commit-action git-copy-hash" title="Copy full hash"><i class="fa fa-clipboard"></i></button></div>' +
+                        '<div><span class="k">author</span> ' + escapeHtml(commit.author) + ' &lt;' + escapeHtml(commit.email || '') + '&gt;</div>' +
+                        '<div><span class="k">date</span> ' + escapeHtml(commit.date) + '</div>' +
+                        '<div class="git-commit-detail-msg">' + escapeHtml(commit.message) + '</div>' +
+                    '</div>' +
+                    '<div class="git-commit-detail-actions">' +
+                        '<button class="git-commit-action" data-act="checkout"><i class="fa fa-code-fork"></i> Checkout</button>' +
+                        '<button class="git-commit-action" data-act="branch"><i class="fa fa-plus"></i> Branch here</button>' +
+                        '<button class="git-commit-action" data-act="reset-mixed"><i class="fa fa-dot-circle-o"></i> Reset here</button>' +
+                        '<button class="git-commit-action" data-act="revert"><i class="fa fa-undo"></i> Revert</button>' +
+                        '<button class="git-commit-action git-commit-action-danger" data-act="reset-hard"><i class="fa fa-exclamation-triangle"></i> Reset --hard</button>' +
+                    '</div>' +
+                    '<div class="git-commit-detail-section">' +
+                        '<div class="git-commit-detail-subhead">Changed flows <span class="git-detail-sub">vs ' + escapeHtml(shortBase) + '</span></div>' +
+                        '<div class="git-commit-flows"><div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading…</p></div></div>' +
+                    '</div>' +
+                    '<div class="git-commit-detail-section">' +
+                        '<div class="git-commit-detail-subhead">Changed files</div>' +
+                        '<div class="git-commit-files"><div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading…</p></div></div>' +
+                    '</div>'
+                );
+
+                $d.find('.git-commit-detail-actions').on('click', '.git-commit-action', function() {
+                    runCommitAction($(this).attr('data-act'), commit);
+                });
+                $d.find('.git-copy-hash').on('click', function(e) { e.stopPropagation(); copyText(commit.hash); });
+
+                loadCommitFlows(commit, base, $d.find('.git-commit-flows'));
+                loadCommitFiles(commit, base, $d.find('.git-commit-files'));
+                return $d;
+            }
+
+            // The per-flow breakdown of what a commit changed. Each unit can be
+            // viewed (field diff) or restored into the working tree from this commit.
+            function loadCommitFlows(commit, base, $target) {
+                $.ajax({
+                    url: 'rosepetal-git/flow-diff',
+                    type: 'POST',
+                    data: JSON.stringify({ base: base, head: commit.hash }),
+                    contentType: 'application/json',
+                    success: function(diff) {
+                        var units = (diff && diff.units ? diff.units : []).filter(function(u) {
+                            return u.status !== 'unchanged';
                         });
-                    }
-
-                    // Draw commit nodes and info for visible commits
-                    for (var i = visibleStart; i < visibleEnd; i++) {
-                        var commit = commits[i];
-                        var y = i * ROW_HEIGHT + 37;
-                        var x = GRAPH_WIDTH / 2 + layout[commit.hash].column * 20;
-
-                        // Determine node color
-                        var color = getCommitColor(commit);
-
-                        // Draw commit node - HEAD gets green center and is bigger
-                        var centerColor = commit.isHead ? '#27AE60' : null;
-                        var radius = commit.isHead ? NODE_RADIUS * 1.5 : NODE_RADIUS;  // HEAD is 50% bigger
-                        drawCommitNode(ctx, x, y, radius, color, centerColor);
-
-                        // Draw commit info (hash, message, author, time)
-                        ctx.fillStyle = '#333';
-                        ctx.font = '12px monospace';
-                        var hashText = commit.hash.substring(0, 7);
-                        ctx.fillText(hashText, GRAPH_WIDTH + 10, y - 15);
-
-                        ctx.font = '13px sans-serif';
-                        var messageText = commit.message.length > 50 ? commit.message.substring(0, 47) + '...' : commit.message;
-                        ctx.fillText(messageText, GRAPH_WIDTH + 10, y + 2);
-
-                        ctx.font = '11px sans-serif';
-                        ctx.fillStyle = '#666';
-                        var authorTime = commit.author + ' • ' + getRelativeTime(commit.date);
-                        ctx.fillText(authorTime, GRAPH_WIDTH + 10, y + 18);
-
-                        // Draw branch labels if any - positioned at top-right of card
-                        if (commit.branches && commit.branches.length > 0) {
-                            ctx.font = 'bold 10px sans-serif';
-
-                            // Calculate total width of all branch labels
-                            var totalBranchWidth = 0;
-                            commit.branches.forEach(function(branch) {
-                                totalBranchWidth += ctx.measureText(branch).width + 12 + 5;  // width + padding + spacing
-                            });
-
-                            // Position from right edge of card (match the card width from drawCommitCard)
-                            var cardWidth = containerWidth - 28;  // 5px left + 23px right padding for scrollbar
-                            var branchX = cardWidth - totalBranchWidth + 5;  // Start position (from right)
-                            var branchY = y - 29;  // Top of the card with small padding
-
-                            commit.branches.forEach(function(branch) {
-                                var branchWidth = ctx.measureText(branch).width + 12;
-                                ctx.fillStyle = '#2196F3';
-                                ctx.fillRect(branchX, branchY, branchWidth, 16);
-                                ctx.fillStyle = '#fff';
-                                ctx.fillText(branch, branchX + 6, branchY + 11);
-                                branchX += branchWidth + 5;
-                            });
+                        if (!units.length) {
+                            $target.html('<div class="git-diff-empty">No flow changes in this commit.</div>');
+                            return;
                         }
+                        $target.empty().append(buildFlowUnits(units, {
+                            base: base,
+                            head: commit.hash,
+                            revertRef: commit.hash,
+                            revertVerb: 'restore',
+                            nodeRevertRef: commit.hash
+                        }));
+                    },
+                    error: function() {
+                        $target.html('<div class="git-diff-empty">Flow file unavailable for this commit.</div>');
                     }
-                }
-
-                // Initial render
-                renderVisibleCommits();
-
-                // Debounced scroll handler for smooth performance
-                var scrollTimeout;
-                $container.off('scroll').on('scroll', function() {
-                    if (scrollTimeout) {
-                        clearTimeout(scrollTimeout);
-                    }
-                    scrollTimeout = setTimeout(function() {
-                        renderVisibleCommits();
-                    }, 16); // ~60fps
                 });
+            }
 
-                // Add click handler for canvas - click anywhere on card
-                $(canvas).off('click').on('click', function(e) {
-                    var rect = canvas.getBoundingClientRect();
-                    var clickX = e.clientX - rect.left;
-                    var clickY = e.clientY - rect.top;
-                    var scrollTop = $container.scrollTop();
-
-                    // Check if click is on any commit card
-                    commits.forEach(function(commit, index) {
-                        var cardY = index * ROW_HEIGHT + 37;
-                        var cardTop = cardY - 35;
-                        var cardBottom = cardY + 30;
-                        var clickYAbsolute = clickY + scrollTop;
-
-                        // Check if click is within card boundaries
-                        if (clickYAbsolute >= cardTop && clickYAbsolute <= cardBottom) {
-                            openCommitModal(commit);
+            function loadCommitFiles(commit, base, $target) {
+                $.ajax({
+                    url: 'rosepetal-git/commit-diff',
+                    type: 'POST',
+                    data: JSON.stringify({ commitRef: commit.hash }),
+                    contentType: 'application/json',
+                    success: function(res) {
+                        var files = (res && res.files) || [];
+                        if (!files.length) {
+                            $target.html('<div class="git-diff-empty">No files changed.</div>');
+                            return;
                         }
-                    });
-                });
-
-                // Add hover handler for visual feedback
-                $(canvas).off('mousemove').on('mousemove', function(e) {
-                    var rect = canvas.getBoundingClientRect();
-                    var hoverX = e.clientX - rect.left;
-                    var hoverY = e.clientY - rect.top;
-                    var scrollTop = $container.scrollTop();
-
-                    var newHoveredIndex = -1;
-                    var hoveredCommit = null;
-
-                    commits.forEach(function(commit, index) {
-                        var cardY = index * ROW_HEIGHT + 37;
-                        var cardTop = cardY - 35;
-                        var cardBottom = cardY + 30;
-                        var hoverYAbsolute = hoverY + scrollTop;
-
-                        // Check if hover is within card boundaries
-                        if (hoverYAbsolute >= cardTop && hoverYAbsolute <= cardBottom) {
-                            newHoveredIndex = index;
-                            hoveredCommit = commit;
-                        }
-                    });
-
-                    // Update hover state if changed
-                    if (newHoveredIndex !== hoveredCommitIndex) {
-                        hoveredCommitIndex = newHoveredIndex;
-                        renderVisibleCommits(hoveredCommitIndex);
-                    }
-
-                    // Show tooltip on hover
-                    if (hoveredCommit) {
-                        tooltip.html('<strong>' + escapeHtml(hoveredCommit.hash.substring(0, 7)) + '</strong><br>' + escapeHtml(hoveredCommit.message));
-                        tooltip.css({
-                            display: 'block',
-                            left: (e.clientX - rect.left + 15) + 'px',
-                            top: (e.clientY - rect.top + 15) + 'px'
+                        var $fl = $('<div class="git-file-list">');
+                        files.forEach(function(f) {
+                            var letter = String(f.status || '').charAt(0).toLowerCase();
+                            var $f = $('<div class="git-file-row">').html(
+                                '<span class="git-file-status git-fs-' + escapeAttr(letter) + '">' + escapeHtml(f.status) + '</span>' +
+                                '<span class="git-file-path">' + escapeHtml(f.path) + '</span>'
+                            );
+                            $f.on('click', function() { openFileDiff(f.path, base, commit.hash); });
+                            $fl.append($f);
                         });
-                        $(canvas).css('cursor', 'pointer');
-                    } else {
-                        tooltip.hide();
-                        $(canvas).css('cursor', 'default');
+                        $target.empty().append($fl);
+                    },
+                    error: function() {
+                        $target.html('<div class="git-diff-empty">Could not load files.</div>');
                     }
                 });
+            }
 
-                $(canvas).off('mouseleave').on('mouseleave', function() {
-                    tooltip.hide();
-                    hoveredCommitIndex = -1;
-                    renderVisibleCommits();
+            // Show a file's unified text diff between two refs in the diff modal.
+            function openFileDiff(file, base, head) {
+                $('#git-diff-title').text(file);
+                $('#git-diff-body').html('<div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading diff…</p></div>');
+                $('#git-diff-modal').fadeIn(150);
+                $.ajax({
+                    url: 'rosepetal-git/file-diff',
+                    type: 'POST',
+                    data: JSON.stringify({ file: file, base: base, head: head }),
+                    contentType: 'application/json',
+                    success: function(res) { $('#git-diff-body').html(renderUnifiedDiff(res.diff)); },
+                    error: function() { $('#git-diff-body').html('<p>Failed to load diff.</p>'); }
                 });
             }
 
-            function calculateGraphLayout(commits) {
-                // Simple layout: assign column 0 to all commits (linear graph)
-                // Future enhancement: handle branches with multiple columns
-                var layout = {};
-                commits.forEach(function(commit) {
-                    layout[commit.hash] = { column: 0 };
+            function renderUnifiedDiff(diff) {
+                if (!diff || !diff.trim()) return '<div class="git-diff-empty">No textual differences.</div>';
+                var lines = diff.split('\n').map(function(ln) {
+                    var cls = '';
+                    if (/^\+\+\+|^---/.test(ln)) cls = 'dl-file';
+                    else if (ln.charAt(0) === '+') cls = 'dl-add';
+                    else if (ln.charAt(0) === '-') cls = 'dl-del';
+                    else if (ln.charAt(0) === '@') cls = 'dl-hunk';
+                    return '<div class="git-diff-line ' + cls + '">' + escapeHtml(ln || ' ') + '</div>';
+                }).join('');
+                return '<div class="git-unified-diff">' + lines + '</div>';
+            }
+
+            // Validate first (uncommitted changes would be lost), then check out.
+            function checkoutCommit(hash) {
+                $.ajax({
+                    url: 'rosepetal-git/validate-checkout',
+                    type: 'POST',
+                    data: JSON.stringify({ targetRef: hash }),
+                    contentType: 'application/json',
+                    success: function(validation) {
+                        if (validation.canCheckout) {
+                            executeGitOperation('checkout', { commitRef: hash }, function() {
+                                reloadFlowsFromDisk(function() { loadAll(); });
+                            });
+                        } else {
+                            showBlockingError(validation.blockers, validation);
+                        }
+                    },
+                    error: function(xhr) {
+                        RED.notify("Failed to validate checkout: " + ((xhr.responseJSON && xhr.responseJSON.error) || "Unknown error"), "error");
+                    }
                 });
-                return layout;
             }
 
-            function drawConnection(ctx, fromX, fromY, toX, toY) {
-                ctx.strokeStyle = '#95A5A6';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(fromX, fromY);
-                ctx.lineTo(toX, toY);
-                ctx.stroke();
+            function runCommitAction(act, commit) {
+                var h = commit.hash, short = h.substring(0, 7);
+                if (act === 'checkout') {
+                    checkoutCommit(h);
+                } else if (act === 'branch') {
+                    var name = prompt('New branch name (starting at ' + short + '):');
+                    if (!name) return;
+                    executeGitOperation('create-branch', { name: name, startPoint: h, checkout: true }, function() {
+                        reloadFlowsFromDisk(function() { loadAll(); });
+                    });
+                } else if (act === 'reset-mixed') {
+                    if (!confirm('Reset the current branch to ' + short + '?\n\nCommits after it are removed from the branch, but your working files are KEPT as uncommitted changes.')) return;
+                    executeGitOperation('reset', { commitRef: h, resetMode: 'mixed' }, function() {
+                        reloadFlowsFromDisk(function() { loadAll(); });
+                    });
+                } else if (act === 'reset-hard') {
+                    if (!confirm('⚠ HARD reset to ' + short + '?\n\nThis PERMANENTLY discards every commit after it AND all uncommitted changes. This cannot be undone.')) return;
+                    executeGitOperation('reset', { commitRef: h, resetMode: 'hard', safeMode: false }, function() {
+                        reloadFlowsFromDisk(function() { loadAll(); });
+                    });
+                } else if (act === 'revert') {
+                    if (!confirm('Create a new commit that undoes ' + short + '?\n\nHistory is preserved — a new commit reverses this one\'s changes.')) return;
+                    executeGitOperation('revert', { commitRef: h }, afterPossibleConflict);
+                }
             }
 
-            function drawCommitNode(ctx, x, y, radius, color, centerColor) {
-                // Draw outer circle
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Draw inner circle (white)
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(x, y, radius - 2, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Draw center dot - use centerColor if provided, otherwise use outer color
-                ctx.fillStyle = centerColor || color;
-                ctx.beginPath();
-                ctx.arc(x, y, radius - 4, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-
-            function getCommitColor(commit) {
-                // Return outer circle color based on push status
-                // HEAD will have green center, but outer circle shows push status
-                if (commit.pushed) {
-                    return '#4A90E2';  // Blue for pushed
+            // Follow-up for merge-like ops (pull / revert / cherry-pick) that may
+            // leave conflicts. Three outcomes:
+            //   - conflicted: flow file has conflict markers (invalid JSON) - do NOT
+            //     reload from it; just refresh state so the banner shows.
+            //   - changed nothing relevant (result.flowFileChanged === false, e.g. a
+            //     no-op "already up to date" pull): refresh the panels only, no
+            //     Node-RED restart / page reload.
+            //   - otherwise: reload flows from disk (restart) to resync the editor.
+            function afterPossibleConflict(result) {
+                if (result && result.conflicted) {
+                    var n = (result.conflictedFiles || []).length;
+                    RED.notify((n || 'Some') + ' file(s) conflicted — resolve them or use Abort on the banner.', "warning");
+                    loadAll();
+                } else if (result && result.flowFileChanged === false) {
+                    loadAll();
                 } else {
-                    return '#9B59B6';  // Purple for unpushed
+                    reloadFlowsFromDisk(function() { loadAll(); });
                 }
             }
 
-            function drawCommitCard(ctx, y, width, isHovered) {
-                var cardX = 5;
-                var cardY = y - 35;
-                var cardWidth = width - 28;  // 5px left + 23px right padding for scrollbar
-                var cardHeight = 65;
-                var borderRadius = 6;
-
-                // Save context state
-                ctx.save();
-
-                // Draw card shadow (subtle)
-                if (!isHovered) {
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
-                    ctx.shadowBlur = 6;
-                    ctx.shadowOffsetY = 2;
+            function copyText(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(
+                        function() { RED.notify("Copied " + text.substring(0, 10) + "…", "success"); },
+                        function() { RED.notify("Copy failed", "error"); }
+                    );
+                    return;
                 }
-
-                // Draw card background with rounded corners
-                ctx.fillStyle = isHovered ? '#f0f4f8' : '#ffffff';
-                ctx.beginPath();
-                ctx.moveTo(cardX + borderRadius, cardY);
-                ctx.lineTo(cardX + cardWidth - borderRadius, cardY);
-                ctx.quadraticCurveTo(cardX + cardWidth, cardY, cardX + cardWidth, cardY + borderRadius);
-                ctx.lineTo(cardX + cardWidth, cardY + cardHeight - borderRadius);
-                ctx.quadraticCurveTo(cardX + cardWidth, cardY + cardHeight, cardX + cardWidth - borderRadius, cardY + cardHeight);
-                ctx.lineTo(cardX + borderRadius, cardY + cardHeight);
-                ctx.quadraticCurveTo(cardX, cardY + cardHeight, cardX, cardY + cardHeight - borderRadius);
-                ctx.lineTo(cardX, cardY + borderRadius);
-                ctx.quadraticCurveTo(cardX, cardY, cardX + borderRadius, cardY);
-                ctx.closePath();
-                ctx.fill();
-
-                // Reset shadow
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
-
-                // Draw card border
-                ctx.strokeStyle = isHovered ? '#cbd5e0' : '#e2e8f0';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Restore context state
-                ctx.restore();
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); RED.notify("Copied", "success"); }
+                catch (e) { RED.notify("Copy failed", "error"); }
+                document.body.removeChild(ta);
             }
 
             function loadChanges() {
@@ -2111,9 +2297,16 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 return 'modified';
             }
 
-            function buildFlowUnits(units) {
-                var $wrap = $('<div class="git-flow-units">');
+            // Render a list of flow units. `ctx` decides what the view/revert
+            // buttons compare against and restore to, so the same rows serve both
+            // the working-changes panel (vs HEAD) and a past commit's detail.
+            function buildFlowUnits(units, ctx) {
+                ctx = ctx || { base: 'HEAD', head: null, revertRef: 'HEAD', revertVerb: 'revert', nodeRevertRef: 'HEAD' };
+                var restore = ctx.revertVerb === 'restore';
+                var revertTitle = restore ? 'Restore this unit from this commit' : 'Revert this unit to the last commit';
+                var revertIcon = restore ? 'fa-history' : 'fa-undo';
 
+                var $wrap = $('<div class="git-flow-units">');
                 units.forEach(function(unit) {
                     var $row = $('<div class="git-flow-unit git-flow-status-' + unit.status + '">');
                     $row.html(
@@ -2122,13 +2315,13 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                         '<span class="git-flow-unit-label">' + escapeHtml(unit.label) + '</span>' +
                         '<span class="git-flow-unit-counts">' + flowUnitCounts(unit) + '</span>' +
                         '<button class="git-flow-unit-btn git-flow-unit-diff" title="View changes"><i class="fa fa-eye"></i></button>' +
-                        '<button class="git-flow-unit-btn git-flow-unit-revert" title="Revert this unit to the last commit"><i class="fa fa-undo"></i></button>'
+                        '<button class="git-flow-unit-btn git-flow-unit-revert" title="' + escapeAttr(revertTitle) + '"><i class="fa ' + revertIcon + '"></i></button>'
                     );
                     $row.find('.git-flow-unit-diff').on('click', function() {
-                        openFlowUnitDiff(unit.id, unit.label);
+                        openUnitDiff(unit.id, unit.label, ctx);
                     });
                     $row.find('.git-flow-unit-revert').on('click', function() {
-                        revertFlowUnit(unit.id, unit.label);
+                        revertFlowUnit(unit.id, unit.label, ctx.revertRef, ctx.revertVerb);
                     });
                     $wrap.append($row);
                 });
@@ -2150,15 +2343,24 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 $row.after(buildFlowUnits(units));
             }
 
-            function openFlowUnitDiff(unitId, label) {
+            // Field-level diff for one unit, between ctx.base and ctx.head (working
+            // tree when ctx.head is empty). Remembers which ref a per-node revert
+            // inside the modal should target.
+            function openUnitDiff(unitId, label, ctx) {
+                ctx = ctx || {};
+                currentDiffCtx = { ref: ctx.nodeRevertRef || 'HEAD', verb: ctx.revertVerb || 'revert' };
+
                 $('#git-diff-title').text('Changes · ' + label);
                 $('#git-diff-body').html('<div class="git-loading-state"><i class="fa fa-spinner fa-spin"></i><p>Loading changes…</p></div>');
                 $('#git-diff-modal').fadeIn(150);
 
+                var payload = { base: ctx.base || 'HEAD', detail: true };
+                if (ctx.head) payload.head = ctx.head;
+
                 $.ajax({
                     url: 'rosepetal-git/flow-diff',
                     type: 'POST',
-                    data: JSON.stringify({ base: 'HEAD', detail: true }),
+                    data: JSON.stringify(payload),
                     contentType: 'application/json',
                     success: function(diff) {
                         var unit = (diff.units || []).filter(function(u) { return u.id === unitId; })[0];
@@ -2269,46 +2471,57 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 return out;
             }
 
+            // A short label for the ref a revert targets, for confirm prompts.
+            function refLabel(ref) {
+                return (!ref || ref === 'HEAD') ? 'the last commit' : 'commit ' + ref.substring(0, 7);
+            }
+
             function revertFlowNode(nodeId) {
                 if (!nodeId) return;
-                if (!confirm('Revert this node to the last commit?\n\nOnly this node changes; everything else in the flow stays as-is.')) {
+                var ref = currentDiffCtx.ref || 'HEAD';
+                if (!confirm('Restore this node to its version at ' + refLabel(ref) + '?\n\nOnly this node changes; everything else in the flow stays as-is.')) {
                     return;
                 }
                 $.ajax({
                     url: 'rosepetal-git/revert-flow-nodes',
                     type: 'POST',
-                    data: JSON.stringify({ nodeIds: [nodeId], ref: 'HEAD' }),
+                    data: JSON.stringify({ nodeIds: [nodeId], ref: ref }),
                     contentType: 'application/json',
                     success: function(res) {
                         if (res.warning) RED.notify(res.warning, "warning");
-                        RED.notify("Node reverted", "success");
+                        RED.notify("Node restored", "success");
                         $('#git-diff-modal').fadeOut(150);
                         reloadFlowsFromDisk(function() { loadAll(); });
                     },
                     error: function(xhr) {
                         var info = xhr.responseJSON || {};
-                        RED.notify("Failed to revert node: " + (info.error || "Unknown error"), "error");
+                        RED.notify("Failed to restore node: " + (info.error || "Unknown error"), "error");
                     }
                 });
             }
 
-            function revertFlowUnit(unitId, label) {
-                if (!confirm('Revert "' + label + '" to the last commit?\n\nThis discards uncommitted changes to this unit only. Other flows are left untouched.')) {
+            function revertFlowUnit(unitId, label, ref, verb) {
+                ref = ref || 'HEAD';
+                var restore = verb === 'restore';
+                var msg = restore
+                    ? 'Restore "' + label + '" to ' + refLabel(ref) + '?\n\nThis brings the unit back to how it was in ' + refLabel(ref) + ', as an uncommitted change. Other flows are untouched.'
+                    : 'Revert "' + label + '" to ' + refLabel(ref) + '?\n\nThis discards uncommitted changes to this unit only. Other flows are left untouched.';
+                if (!confirm(msg)) {
                     return;
                 }
                 $.ajax({
                     url: 'rosepetal-git/revert-flow-unit',
                     type: 'POST',
-                    data: JSON.stringify({ unitId: unitId, ref: 'HEAD' }),
+                    data: JSON.stringify({ unitId: unitId, ref: ref }),
                     contentType: 'application/json',
                     success: function(res) {
                         if (res.warning) RED.notify(res.warning, "warning");
-                        RED.notify('Reverted "' + label + '"', "success");
+                        RED.notify((restore ? 'Restored "' : 'Reverted "') + label + '"', "success");
                         reloadFlowsFromDisk(function() { loadAll(); });
                     },
                     error: function(xhr) {
                         var info = xhr.responseJSON || {};
-                        RED.notify("Failed to revert: " + (info.error || "Unknown error"), "error");
+                        RED.notify("Failed: " + (info.error || "Unknown error"), "error");
                     }
                 });
             }
@@ -2331,8 +2544,9 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                         });
                     },
                     error: function(xhr) {
-                        var errorInfo = xhr.responseJSON || {};
-                        RED.notify("Failed to discard changes: " + (errorInfo.error || "Unknown error"), "error");
+                        // Show the real git reason + suggestion (e.g. unmerged path),
+                        // not just a generic "discard failed".
+                        displayDetailedError(xhr.responseJSON || {}, 'discard');
                     }
                 });
             }
@@ -2348,22 +2562,6 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 } else {
                     $commitPanel.show();  // Show whenever there are changes
                 }
-            }
-
-            function openCommitModal(commit) {
-                currentCommit = commit;
-
-                var html = '<div class="git-commit-detail-item"><strong>Hash:</strong> ' + escapeHtml(commit.hash) + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Message:</strong> ' + escapeHtml(commit.message) + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Author:</strong> ' + escapeHtml(commit.author) + '</div>';
-                html += '<div class="git-commit-detail-item"><strong>Date:</strong> ' + escapeHtml(commit.date) + '</div>';
-
-                $('#git-modal-commit-details').html(html);
-                $('#git-commit-modal').fadeIn(200);
-            }
-
-            function closeModal() {
-                $('#git-commit-modal').fadeOut(200);
             }
 
             function showBlockingError(blockers, validation) {
@@ -2385,8 +2583,6 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 $('#git-blocking-message').html(messages.join(''));
                 $('#git-blocking-actions').html(actions.join('') + '<button class="git-action-btn" id="git-cancel-action"><i class="fa fa-times"></i><span>Cancel</span></button>');
 
-                // Close commit modal and show blocking modal
-                closeModal();
                 $('#git-blocking-modal').fadeIn(200);
 
                 // Attach action handlers
@@ -2405,38 +2601,6 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 });
             }
 
-            function handleCommitAction(action) {
-                if (!currentCommit) return;
-
-                // Validate checkout safety before proceeding
-                if (action === 'checkout') {
-                    $.ajax({
-                        url: 'rosepetal-git/validate-checkout',
-                        type: 'POST',
-                        data: JSON.stringify({ targetRef: currentCommit.hash }),
-                        contentType: 'application/json',
-                        success: function(validation) {
-                            if (validation.canCheckout) {
-                                // Safe to checkout
-                                closeModal();
-                                executeGitOperation('checkout', { commitRef: currentCommit.hash }, function() {
-                                    // Reload flows from disk after checkout
-                                    reloadFlowsFromDisk(function() {
-                                        loadAll();
-                                    });
-                                });
-                            } else {
-                                // Show blocking errors
-                                showBlockingError(validation.blockers, validation);
-                            }
-                        },
-                        error: function(xhr) {
-                            RED.notify("Failed to validate checkout: " + (xhr.responseJSON?.error || "Unknown error"), "error");
-                        }
-                    });
-                }
-            }
-
             function handleFetch() {
                 setToolbarLoading('#git-btn-fetch', true);
                 executeGitOperation('fetch', {}, function() {
@@ -2449,12 +2613,9 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
 
             function handlePull() {
                 setToolbarLoading('#git-btn-pull', true);
-                executeGitOperation('pull', {}, function() {
+                executeGitOperation('pull', {}, function(result) {
                     setToolbarLoading('#git-btn-pull', false);
-                    // Reload flows from disk after pull
-                    reloadFlowsFromDisk(function() {
-                        loadAll();
-                    });
+                    afterPossibleConflict(result);
                 }, function() {
                     setToolbarLoading('#git-btn-pull', false);
                 });
@@ -2477,6 +2638,27 @@ body.red-ui-theme-midnight .git-diff-col-after { background: rgba(129, 199, 132,
                 // Normal push (commits in detached HEAD now create branches automatically)
                 setToolbarLoading('#git-btn-push', true);
                 executeGitOperation('push', {}, function() {
+                    setToolbarLoading('#git-btn-push', false);
+                    loadAll();
+                }, function(errMsg) {
+                    setToolbarLoading('#git-btn-push', false);
+                    // A diverged/non-fast-forward rejection is recoverable: offer a
+                    // force-push (the plain error toast already explained the cause).
+                    if (/non-fast-forward|diverged|rejected|fetch first/i.test(errMsg || '')) {
+                        offerForcePush();
+                    }
+                });
+            }
+
+            // Confirm-gated force push for a diverged branch. --force-with-lease is
+            // refused if the remote has commits we haven't seen, so it won't silently
+            // clobber someone else's work the way a plain --force would.
+            function offerForcePush() {
+                if (!confirm('Remote and local have diverged.\n\nForce-push with --force-with-lease? This replaces the remote branch with yours. It is refused if the remote has commits you have not fetched, so it is safer than a plain force-push — but it still overwrites remote history.\n\nCancel instead to Pull and merge first.')) {
+                    return;
+                }
+                setToolbarLoading('#git-btn-push', true);
+                executeGitOperation('force-push', { confirmed: true }, function() {
                     setToolbarLoading('#git-btn-push', false);
                     loadAll();
                 }, function() {

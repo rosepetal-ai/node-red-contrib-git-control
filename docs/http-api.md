@@ -40,7 +40,7 @@ editor sessions). All POST bodies are JSON (`Content-Type: application/json`).
 | Level | Endpoints | Notes |
 |-------|-----------|-------|
 | safe (read-only) | `project-info`, `status`, `log`, `branches`, `show`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `ssh-keys` | never modify the repo |
-| writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `pull`, `merge`, `revert`, `cherry-pick`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `ssh-key` | reversible via git |
+| writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `pull`, `merge`, `revert`, `cherry-pick`, `abort`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `ssh-key` | reversible via git |
 | destructive (needs `confirmed: true`) | `force-push`, `discard-all`, `delete-branch` *(when `force: true`)*, `reset` *(hard, when `safeMode: false`)* | can discard work / rewrite history |
 
 All responses are JSON. Errors return:
@@ -106,9 +106,16 @@ Returns metadata about the active Node-RED project and its Git state.
   "ahead": 2,
   "behind": 0,
   "isDetachedHead": false,
-  "hasTracking": true
+  "hasTracking": true,
+  "conflicted": [],
+  "diverged": false,
+  "mergeState": { "inProgress": false, "kind": null }
 }
 ```
+
+- `conflicted`: paths with unresolved merge conflicts (empty when clean).
+- `diverged`: `true` when the branch is both ahead of and behind its remote (a plain push will be rejected — pull first, or `force-push`).
+- `mergeState.inProgress` / `kind`: a `merge` / `cherry-pick` / `revert` / `rebase` left mid-flight (usually by a conflict). `kind` is also the subcommand `/abort` uses. See `POST /rosepetal-git/abort`.
 
 ### Repository Operations
 
@@ -558,9 +565,15 @@ Merge a ref into the current branch. `noFastForward: true` forces a merge commit
 { "ref": "feature/x", "noFastForward": false }
 ```
 
+> `merge`, `pull`, `revert`, and `cherry-pick` can leave the repo mid-operation
+> on a conflict. Instead of throwing, they return `200` with
+> `"conflicted": true` and `"conflictedFiles": [...]`. The flow file then contains
+> conflict markers (invalid JSON) — do **not** redeploy from it. Resolve the files
+> and commit, or call `POST /rosepetal-git/abort` to undo the operation.
+
 #### `POST /rosepetal-git/revert`
 Create a new commit that undoes a previous commit (`git revert`, history-safe).
-`noCommit: true` stages the revert without committing.
+`noCommit: true` stages the revert without committing. May report a conflict (see note above).
 
 **Request**
 ```json
@@ -569,10 +582,26 @@ Create a new commit that undoes a previous commit (`git revert`, history-safe).
 
 #### `POST /rosepetal-git/cherry-pick`
 Apply a commit onto the current branch. `noCommit: true` stages without committing.
+May report a conflict (see note above).
 
 **Request**
 ```json
 { "commitRef": "abc123", "noCommit": false }
+```
+
+#### `POST /rosepetal-git/abort`
+Abort whatever operation is in progress (`merge` / `cherry-pick` / `revert` /
+`rebase` — see `mergeState` in `project-info`), returning the repo to its
+pre-operation state. Errors with `400` if nothing is in progress.
+
+**Request**
+```json
+{}
+```
+
+**Response 200**
+```json
+{ "success": true, "operation": "abort", "kind": "merge" }
 ```
 
 #### `POST /rosepetal-git/discard-all`
