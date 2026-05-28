@@ -4227,19 +4227,42 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 });
             }
 
-            // Confirm-gated force push for a diverged branch. --force-with-lease is
-            // refused if the remote has commits we haven't seen, so it won't silently
-            // clobber someone else's work the way a plain --force would.
+            // Diverged push: a 3-way decision (Pull / Force push / Cancel) shown in
+            // the existing blocking-modal so the user isn't trapped in a single
+            // native confirm. Force push still gets a second native confirm so it's
+            // never one-click destructive.
             function offerForcePush() {
-                if (!confirm('Remote and local have diverged.\n\nForce-push with --force-with-lease? This replaces the remote branch with yours. It is refused if the remote has commits you have not fetched, so it is safer than a plain force-push — but it still overwrites remote history.\n\nCancel instead to Pull and merge first.')) {
-                    return;
-                }
-                setToolbarLoading('#git-btn-push', true);
-                executeGitOperation('force-push', { confirmed: true }, function() {
-                    setToolbarLoading('#git-btn-push', false);
-                    loadAll();
-                }, function() {
-                    setToolbarLoading('#git-btn-push', false);
+                $('#git-blocking-title').text('Remote and local have diverged');
+                $('#git-blocking-message').html(
+                    '<p><i class="fa fa-exclamation-triangle"></i> Your branch and its upstream have both moved.</p>'
+                    + '<p class="git-blocking-hint">Pulling will merge their commits into yours. Force-pushing replaces the remote branch with your local one — safer with <code>--force-with-lease</code>, but it still overwrites remote history.</p>'
+                );
+                $('#git-blocking-actions').html(
+                    '<button class="git-action-btn git-action-primary" id="git-diverged-pull"><i class="fa fa-download"></i><span>Pull</span></button>'
+                    + '<button class="git-action-btn git-action-danger" id="git-diverged-force"><i class="fa fa-upload"></i><span>Force push</span></button>'
+                    + '<button class="git-action-btn" id="git-diverged-cancel"><i class="fa fa-times"></i><span>Cancel</span></button>'
+                );
+                $('#git-blocking-modal').fadeIn(200);
+
+                $('#git-diverged-cancel').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                });
+                $('#git-diverged-pull').on('click', function() {
+                    $('#git-blocking-modal').fadeOut(200);
+                    handlePull();
+                });
+                $('#git-diverged-force').on('click', function() {
+                    if (!confirm('Force-push? This overwrites the remote branch with your local one.')) {
+                        return;
+                    }
+                    $('#git-blocking-modal').fadeOut(200);
+                    setToolbarLoading('#git-btn-push', true);
+                    executeGitOperation('force-push', { confirmed: true }, function() {
+                        setToolbarLoading('#git-btn-push', false);
+                        loadAll();
+                    }, function() {
+                        setToolbarLoading('#git-btn-push', false);
+                    });
                 });
             }
 
