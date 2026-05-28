@@ -624,6 +624,231 @@
     max-height: 88vh;
 }
 
+/* ==================== Merge Resolution Modal ==================== */
+
+/* The merge resolver fills more of the viewport since the user reasons over
+   many conflict cards at once. */
+#git-resolve-modal .git-modal-content,
+.git-resolve-content {
+    max-width: 1100px;
+    width: 92%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.git-resolve-header {
+    flex: 0 0 auto;
+    padding: 14px 20px 10px 20px;
+    border-bottom: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
+    background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+}
+.git-resolve-titlebar { display: flex; align-items: center; justify-content: space-between; }
+.git-resolve-titlebar h4 { margin: 0; font-size: 16px; font-weight: 600; color: #b71c1c; }
+
+.git-resolve-context {
+    margin-top: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 12px; color: #555;
+}
+.git-resolve-context > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.git-resolve-context .git-resolve-arrow { color: #888; }
+.git-resolve-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+}
+.git-resolve-chip-ours   { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+.git-resolve-chip-theirs { background: #efebe9; color: #4e342e; border: 1px solid #bcaaa4; }
+.git-resolve-commitline { font-family: monospace; font-size: 11px; color: #666; }
+.git-resolve-commitline strong { color: #333; font-weight: 600; }
+
+.git-resolve-summary {
+    flex: 0 0 auto;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    padding: 8px 20px; background: #fff8e1; border-bottom: 1px solid #ffe082;
+    font-size: 12px; color: #5d4037;
+}
+.git-resolve-summary .git-resolve-counts { flex: 1 1 auto; }
+.git-resolve-summary button {
+    flex: 0 0 auto; font-size: 11px; padding: 3px 10px; cursor: pointer;
+    background: #fff; border: 1px solid #9e9e9e; color: #424242; border-radius: 4px;
+}
+.git-resolve-summary button:hover { background: #f5f5f5; }
+.git-resolve-summary .git-resolve-bulk-ours   { border-color: #0d47a1; color: #0d47a1; }
+.git-resolve-summary .git-resolve-bulk-ours:hover { background: #e3f2fd; }
+.git-resolve-summary .git-resolve-bulk-ours.is-active {
+    background: #0d47a1; border-color: #0d47a1; color: #fff;
+}
+.git-resolve-summary .git-resolve-bulk-ours.is-active:hover { background: #0a3a87; }
+.git-resolve-summary .git-resolve-bulk-theirs { border-color: #4e342e; color: #4e342e; }
+.git-resolve-summary .git-resolve-bulk-theirs:hover { background: #efebe9; }
+.git-resolve-summary .git-resolve-bulk-theirs.is-active {
+    background: #4e342e; border-color: #4e342e; color: #fff;
+}
+.git-resolve-summary .git-resolve-bulk-theirs.is-active:hover { background: #3e2723; }
+
+.git-resolve-body {
+    flex: 1 1 auto; overflow-y: auto; padding: 14px 20px;
+    background: #fafafa;
+}
+.git-resolve-empty { padding: 24px; text-align: center; color: #555; font-size: 13px; }
+
+/* Unit card */
+.git-resolve-unit {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 10px;
+}
+.git-resolve-unit-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding-bottom: 8px; border-bottom: 1px dashed #eee; margin-bottom: 8px;
+}
+.git-resolve-unit-kind {
+    font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: #f5f5f5; color: #757575; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.git-resolve-unit-label { flex: 1 1 auto; font-weight: 600; font-size: 13px; color: #333; }
+.git-resolve-unit-count {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #ffcdd2; color: #b71c1c; font-weight: 600;
+}
+.git-resolve-unit-pick {
+    font-size: 11px; padding: 3px 10px; cursor: pointer;
+    background: #fff; border: 1px solid #c62828; color: #c62828; border-radius: 4px;
+}
+.git-resolve-unit-pick:hover { background: #ffebee; }
+.git-resolve-unit-pick.is-active { background: #c62828; color: #fff; }
+.git-resolve-unit-pick.is-active:hover { background: #b71c1c; }
+.git-resolve-unit-structural {
+    margin-bottom: 8px; padding: 6px 10px;
+    background: #fffde7; border-left: 3px solid #fbc02d;
+    font-size: 11px; color: #5d4037;
+}
+
+/* Per-node conflict block */
+.git-resolve-node {
+    border: 1px solid #f5f5f5; border-radius: 6px; margin-bottom: 8px;
+    background: #fafbfc;
+}
+.git-resolve-node-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    user-select: none;
+}
+.git-resolve-node-header.git-resolve-node-toggle { cursor: pointer; }
+.git-resolve-node-header.git-resolve-node-toggle:hover { background: #f0f4f8; }
+.git-resolve-node-chevron {
+    width: 12px; color: #888; font-size: 11px; flex: 0 0 12px; text-align: center;
+    transition: transform 0.1s ease;
+}
+.git-resolve-node-icon { width: 16px; text-align: center; }
+.git-resolve-node-icon.is-conflict { color: #c62828; }
+.git-resolve-node-icon.is-structural { color: #ef6c00; }
+.git-resolve-node-label { flex: 1 1 auto; min-width: 0; font-size: 12px; color: #333; }
+.git-resolve-node-label strong { font-weight: 600; }
+.git-resolve-node-label .git-resolve-node-id {
+    font-family: monospace; font-size: 10px; opacity: 0.6; margin-left: 6px;
+}
+.git-resolve-node-pick {
+    font-size: 11px; padding: 3px 10px; cursor: pointer;
+    background: #fff; border: 1px solid #9e9e9e; color: #424242; border-radius: 4px;
+}
+.git-resolve-node-pick:hover { background: #f0f0f0; }
+.git-resolve-node-pick.is-ours.is-active   { background: #0d47a1; border-color: #0d47a1; color: #fff; }
+.git-resolve-node-pick.is-theirs.is-active { background: #4e342e; border-color: #4e342e; color: #fff; }
+.git-resolve-node-pick.is-inherited { opacity: 0.55; }
+
+/* Per-field diff table */
+.git-resolve-fields {
+    border-top: 1px solid #e0e0e0; padding: 8px 10px;
+    display: grid; grid-template-columns: 130px 1fr 1fr; gap: 4px 8px;
+    font-size: 11px; align-items: start;
+}
+.git-resolve-fields-header {
+    font-weight: 600; color: #777; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    padding-bottom: 4px; border-bottom: 1px solid #f0f0f0;
+}
+.git-resolve-fields-header.is-ours   { color: #0d47a1; }
+.git-resolve-fields-header.is-theirs { color: #4e342e; }
+.git-resolve-field-name { font-family: monospace; color: #555; padding-top: 2px; }
+.git-resolve-field-value {
+    font-family: monospace; word-break: break-all; white-space: pre-wrap;
+    padding: 2px 6px; border-radius: 3px; background: #fff;
+    max-height: 240px; overflow: auto;
+}
+.git-resolve-field-value.is-ours   { background: #e3f2fd; }
+.git-resolve-field-value.is-theirs { background: #efebe9; }
+.git-resolve-field-value.is-deleted {
+    color: #b71c1c; font-style: italic; background: #ffebee;
+}
+.git-resolve-field-value .git-resolve-expand {
+    display: inline-block; cursor: pointer; color: #1976d2;
+    padding: 0 4px; text-decoration: none; user-select: none;
+}
+.git-resolve-fields-unchanged {
+    grid-column: 1 / -1; text-align: center; margin-top: 6px;
+    font-size: 11px; color: #888; cursor: pointer; user-select: none;
+}
+.git-resolve-fields-unchanged:hover { color: #1976d2; }
+
+/* Long-value diff (per-line) */
+.git-resolve-multiline {
+    grid-column: 1 / -1; margin-top: 4px; background: #fff;
+    border: 1px solid #e0e0e0; border-radius: 4px; padding: 6px 8px;
+    font-family: monospace; font-size: 10px; max-height: 280px; overflow: auto;
+}
+.git-resolve-multiline .ml-line { white-space: pre-wrap; word-break: break-all; }
+.git-resolve-multiline .ml-add    { background: #e8f5e9; color: #1b5e20; }
+.git-resolve-multiline .ml-del    { background: #ffebee; color: #b71c1c; }
+.git-resolve-multiline .ml-same   { color: #555; }
+
+/* Commit editor row */
+.git-resolve-commit {
+    flex: 0 0 auto;
+    padding: 10px 20px 4px 20px;
+    border-top: 1px solid var(--red-ui-secondary-border-color, #e0e0e0);
+    background: #fff;
+}
+.git-resolve-commit label {
+    display: block; font-size: 11px; color: #666; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+}
+.git-resolve-commit textarea {
+    width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px;
+    padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 4px;
+    resize: vertical; min-height: 64px; max-height: 220px;
+}
+
+/* Footer */
+.git-resolve-footer {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 20px; border-top: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+.git-resolve-progress { flex: 1 1 auto; font-size: 12px; color: #555; }
+.git-resolve-progress.is-ready { color: #2e7d32; font-weight: 600; }
+.git-resolve-actions { display: flex; gap: 8px; }
+.git-resolve-abort, .git-resolve-commit-btn {
+    padding: 8px 14px; font-size: 12px; border-radius: 4px;
+    border: none; cursor: pointer; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.git-resolve-abort { background: #e53935; color: #fff; }
+.git-resolve-abort:hover { background: #c62828; }
+.git-resolve-commit-btn { background: #2e7d32; color: #fff; }
+.git-resolve-commit-btn:hover { background: #1b5e20; }
+.git-resolve-commit-btn:disabled { background: #a5d6a7; cursor: not-allowed; }
+
+/* Sidebar conflict banner: compact "open modal" form when flow-aware
+   resolution is available — replaces the inline resolver. */
+.git-conflict-open {
+    background-color: #c62828;
+    color: #fff;
+}
+.git-conflict-open:hover { background-color: #b71c1c; }
+
 /* Two-column (Before / After) field diff */
 .git-diff-cols-header,
 .git-diff-field {
@@ -1464,8 +1689,88 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
     overflow-y: auto;
 }
 .git-conflict-files > div { word-break: break-all; }
+.git-conflict-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
 .git-conflict-abort { background-color: #e53935; }
 .git-conflict-abort:hover { background-color: #c62828; }
+.git-conflict-resolve { background-color: #2e7d32; }
+.git-conflict-resolve:hover { background-color: #1b5e20; }
+.git-conflict-resolve:disabled { background-color: #a5d6a7; cursor: not-allowed; }
+
+/* Flow-aware resolution panel inside the conflict banner */
+.git-conflict-resolver { margin-top: 10px; }
+.git-conflict-resolver-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 6px 8px; background: rgba(255,255,255,0.55); border-radius: 6px;
+    margin-bottom: 6px;
+}
+.git-conflict-resolver-summary {
+    flex: 1 1 auto; font-size: 11px; color: #b71c1c; font-weight: 600;
+}
+.git-conflict-bulk {
+    flex: 0 0 auto; font-size: 11px; padding: 3px 8px; cursor: pointer;
+    background: #fff; border: 1px solid #e53935; color: #b71c1c; border-radius: 4px;
+}
+.git-conflict-bulk:hover { background: #ffebee; }
+.git-conflict-bulk-clear { border-color: #9e9e9e; color: #424242; }
+.git-conflict-bulk-clear:hover { background: #f5f5f5; }
+
+.git-conflict-units { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+.git-conflict-unit {
+    background: rgba(255,255,255,0.7); border: 1px solid #ef9a9a; border-radius: 6px; padding: 6px 8px;
+}
+.git-conflict-unit-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    font-size: 11px; color: #b71c1c;
+}
+.git-conflict-unit-label { flex: 1 1 auto; font-weight: 600; }
+.git-conflict-unit-kind { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+.git-conflict-unit-count { font-size: 10px; padding: 1px 6px; background: #ffcdd2; border-radius: 8px; color: #b71c1c; }
+.git-conflict-unit-pick {
+    font-size: 10px; padding: 2px 6px; cursor: pointer; background: #fff;
+    border: 1px solid #c62828; color: #c62828; border-radius: 3px;
+}
+.git-conflict-unit-pick.is-active { background: #c62828; color: #fff; }
+.git-conflict-unit-pick:hover { background: #ffebee; }
+.git-conflict-unit-pick.is-active:hover { background: #b71c1c; }
+
+.git-conflict-unit-structural {
+    margin-top: 4px; font-size: 11px; color: #424242; font-style: italic;
+}
+
+.git-conflict-nodes { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.git-conflict-node {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 4px 6px; background: #fff; border-radius: 4px; border: 1px solid #ffcdd2;
+}
+.git-conflict-node-label { flex: 1 1 auto; min-width: 0; font-size: 11px; color: #333; }
+.git-conflict-node-label .git-conflict-node-id {
+    font-family: monospace; font-size: 10px; opacity: 0.6; margin-left: 4px;
+}
+.git-conflict-node-pick {
+    font-size: 10px; padding: 2px 6px; cursor: pointer; background: #fff;
+    border: 1px solid #757575; color: #424242; border-radius: 3px;
+}
+.git-conflict-node-pick.is-active { color: #fff; }
+.git-conflict-node-pick.is-active.is-ours { background: #1976d2; border-color: #1976d2; }
+.git-conflict-node-pick.is-active.is-theirs { background: #6d4c41; border-color: #6d4c41; }
+.git-conflict-node-pick.is-inherited { opacity: 0.55; }
+.git-conflict-node-pick:hover { background: #f5f5f5; }
+.git-conflict-node-diff {
+    flex: 0 0 auto; font-size: 10px; padding: 2px 6px; cursor: pointer; background: transparent;
+    border: 1px dashed #9e9e9e; color: #424242; border-radius: 3px;
+}
+.git-conflict-node-diff:hover { background: #fafafa; }
+.git-conflict-node-diff-body {
+    flex: 1 1 100%; margin-top: 4px; font-family: monospace; font-size: 10px;
+    background: #fafafa; padding: 6px; border-radius: 4px;
+    white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto;
+}
+.git-conflict-node-side {
+    flex: 1 1 100%; margin-top: 3px; font-family: monospace; font-size: 10px;
+    background: #f5f5f5; padding: 4px 6px; border-radius: 4px;
+    border-left: 3px solid #9e9e9e; color: #424242;
+}
+.git-conflict-node-side.is-deleted { background: #ffebee; border-left-color: #c62828; color: #b71c1c; font-style: italic; }
 
 /* ==================== Error Modal Styles ==================== */
 
@@ -1665,7 +1970,9 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                         </button>
                     </div>
 
-                    <!-- Conflict / in-progress operation Banner -->
+                    <!-- Conflict / in-progress operation Banner. When the
+                         merge is flow-aware, the "Resolve" action opens the
+                         dedicated resolver modal; the banner stays compact. -->
                     <div class="git-warning-banner git-conflict-banner" id="git-conflict-banner" style="display: none;">
                         <div class="git-warning-content">
                             <i class="fa fa-exclamation-triangle"></i>
@@ -1675,10 +1982,16 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                                 <div class="git-conflict-files" id="git-conflict-files"></div>
                             </div>
                         </div>
-                        <button class="git-warning-action git-conflict-abort" id="git-conflict-abort">
-                            <i class="fa fa-times-circle"></i>
-                            <span>Abort</span>
-                        </button>
+                        <div class="git-conflict-actions">
+                            <button class="git-warning-action git-conflict-open" id="git-conflict-open" style="display: none;">
+                                <i class="fa fa-wrench"></i>
+                                <span>Resolve</span>
+                            </button>
+                            <button class="git-warning-action git-conflict-abort" id="git-conflict-abort">
+                                <i class="fa fa-times-circle"></i>
+                                <span>Abort</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Branch Section -->
@@ -1817,6 +2130,41 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                         </div>
                     </div>
 
+                    <!-- Merge Resolution Modal: opened from the conflict banner.
+                         Closing preserves resolver state; only Resolve&commit or
+                         Abort clears it. -->
+                    <div class="git-modal git-resolve-modal" id="git-resolve-modal" style="display: none;">
+                        <div class="git-modal-overlay" id="git-resolve-overlay"></div>
+                        <div class="git-modal-content git-resolve-content">
+                            <div class="git-resolve-header">
+                                <div class="git-resolve-titlebar">
+                                    <h4>Resolve merge conflicts</h4>
+                                    <button class="git-modal-close" id="git-resolve-close" title="Close (preserves choices)">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="git-resolve-context" id="git-resolve-context"></div>
+                            </div>
+                            <div class="git-resolve-summary" id="git-resolve-summary"></div>
+                            <div class="git-resolve-body" id="git-resolve-body"></div>
+                            <div class="git-resolve-commit">
+                                <label for="git-resolve-msg">Commit message</label>
+                                <textarea id="git-resolve-msg" rows="4" spellcheck="false"></textarea>
+                            </div>
+                            <div class="git-resolve-footer">
+                                <div class="git-resolve-progress" id="git-resolve-progress"></div>
+                                <div class="git-resolve-actions">
+                                    <button class="git-resolve-abort" id="git-resolve-abort">
+                                        <i class="fa fa-times-circle"></i> Abort merge
+                                    </button>
+                                    <button class="git-resolve-commit-btn" id="git-resolve-commit">
+                                        <i class="fa fa-check-circle"></i> Resolve & commit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             `;
 
@@ -1828,6 +2176,15 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
             var projectInfo = null;
             // Last /branches response, kept so the branch action menu can list branches.
             var lastBranches = null;
+            // State for the flow-aware conflict resolver: preview from the backend
+            // plus user choices and UI toggles. Cleared on abort/commit. Initial
+            // shape MUST match resetResolverState() — the renderers index into
+            // expanded/showUnchanged/showLong on every run.
+            var mergeResolver = {
+                preview: null, byNode: {}, byUnit: {}, fallback: null,
+                fileMergeable: false, expanded: {}, showUnchanged: {}, showLong: {},
+                commitMessage: null
+            };
             // The branch picker combobox (created after the markup is in the DOM).
             var branchCombo = null;
             // The upstream / remote-branch picker (Node-RED style "Find or create
@@ -2014,10 +2371,123 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     if (!confirm('Abort the in-progress ' + kind + '?\n\nThis returns the repo to the state before it started. Any conflict resolutions you have not committed will be lost.')) {
                         return;
                     }
+                    resetResolverState();
                     executeGitOperation('abort', {}, function() {
+                        closeResolverModal();
                         reloadFlowsFromDisk(function() { loadAll(); });
                     });
                 });
+
+                // Opening the modal is on-demand: the banner stays compact and
+                // the heavy resolver UI only mounts when the user asks for it.
+                $('#git-conflict-open').on('click', openResolverModal);
+
+                $('#git-resolve-close').on('click', closeResolverModal);
+                $('#git-resolve-overlay').on('click', closeResolverModal);
+                $(document).on('keydown.gitResolver', function(e) {
+                    if (e.key === 'Escape' && $('#git-resolve-modal').is(':visible')) {
+                        closeResolverModal();
+                    }
+                });
+
+                // Bulk fallbacks live in the summary strip inside the modal; event
+                // delegation keeps re-renders cheap.
+                $('#git-resolve-summary').on('click', '.git-resolve-bulk-ours', function() {
+                    mergeResolver.fallback = mergeResolver.fallback === 'ours' ? null : 'ours';
+                    renderResolverModal();
+                });
+                $('#git-resolve-summary').on('click', '.git-resolve-bulk-theirs', function() {
+                    mergeResolver.fallback = mergeResolver.fallback === 'theirs' ? null : 'theirs';
+                    renderResolverModal();
+                });
+                $('#git-resolve-summary').on('click', '.git-resolve-bulk-clear', function() {
+                    mergeResolver.fallback = null;
+                    mergeResolver.byNode = {};
+                    mergeResolver.byUnit = {};
+                    renderResolverModal();
+                });
+
+                $('#git-resolve-body').on('click', '.git-resolve-unit-pick', function(e) {
+                    e.stopPropagation();
+                    var unitId = $(this).closest('.git-resolve-unit').data('unitId');
+                    var side = $(this).data('side');
+                    if (mergeResolver.byUnit[unitId] === side) delete mergeResolver.byUnit[unitId];
+                    else mergeResolver.byUnit[unitId] = side;
+                    renderResolverModal();
+                });
+                $('#git-resolve-body').on('click', '.git-resolve-node-pick', function(e) {
+                    e.stopPropagation();
+                    var nodeId = $(this).closest('.git-resolve-node').data('nodeId');
+                    var side = $(this).data('side');
+                    if (mergeResolver.byNode[nodeId] === side) delete mergeResolver.byNode[nodeId];
+                    else mergeResolver.byNode[nodeId] = side;
+                    renderResolverModal();
+                });
+                // Clicking the node header (anywhere outside the pick buttons)
+                // toggles the per-field diff for that node.
+                $('#git-resolve-body').on('click', '.git-resolve-node-toggle', function() {
+                    var nodeId = $(this).closest('.git-resolve-node').data('nodeId');
+                    mergeResolver.expanded[nodeId] = !mergeResolver.expanded[nodeId];
+                    renderResolverModal();
+                });
+                $('#git-resolve-body').on('click', '.git-resolve-fields-unchanged', function() {
+                    var key = $(this).data('key');
+                    mergeResolver.showUnchanged[key] = !mergeResolver.showUnchanged[key];
+                    renderResolverModal();
+                });
+                $('#git-resolve-body').on('click', '.git-resolve-expand', function() {
+                    var key = $(this).data('key');
+                    mergeResolver.showLong[key] = !mergeResolver.showLong[key];
+                    renderResolverModal();
+                });
+
+                // The textarea is the source of truth for the commit message; we
+                // only read it on submit.
+                $('#git-resolve-abort').on('click', function() {
+                    $('#git-conflict-abort').click();
+                });
+                $('#git-resolve-commit').on('click', function() {
+                    if ($(this).prop('disabled')) return;
+                    var commitMessage = ($('#git-resolve-msg').val() || '').trim();
+                    if (!commitMessage) {
+                        RED.notify('Commit message is required.', 'warning');
+                        return;
+                    }
+                    executeGitOperation('merge/resolve', {
+                        choices: { byNode: mergeResolver.byNode, byUnit: mergeResolver.byUnit },
+                        fallback: mergeResolver.fallback || 'auto',
+                        commitMessage: commitMessage
+                    }, function(result) {
+                        resetResolverState();
+                        closeResolverModal();
+                        afterPossibleConflict(result);
+                    });
+                });
+            }
+
+            function resetResolverState() {
+                mergeResolver = {
+                    preview: null, byNode: {}, byUnit: {}, fallback: null,
+                    fileMergeable: false, expanded: {}, showUnchanged: {}, showLong: {},
+                    commitMessage: null
+                };
+            }
+
+            function openResolverModal() {
+                if (!mergeResolver.fileMergeable) return;
+                // Seed the textarea ONLY on open: re-renders during user
+                // interaction must not clobber what they typed.
+                $('#git-resolve-msg').val(mergeResolver.commitMessage || '');
+                $('#git-resolve-modal').css('display', 'flex');
+                renderResolverModal();
+            }
+            function closeResolverModal() {
+                // Preserve user state so re-opening picks up where they left off;
+                // only resolve/abort actually clears mergeResolver.
+                if ($('#git-resolve-modal').is(':visible')) {
+                    mergeResolver.commitMessage = $('#git-resolve-msg').val();
+                }
+                $('#git-resolve-modal').hide();
             }
 
             function loadAll() {
@@ -2056,20 +2526,26 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 });
             }
 
-            // Safety-net banner: when a merge/cherry-pick/revert/rebase is mid-flight
-            // (usually after a conflict), list the conflicted files and offer Abort.
+            // Safety-net banner: when a merge/cherry-pick/revert/rebase is
+            // mid-flight, show a compact summary. Flow-aware merges get a
+            // [Resolve] button that opens the modal; other kinds fall back to
+            // the textual file list + Abort.
             function renderConflictBanner(info) {
                 var ms = info.mergeState || {};
                 var conflicted = info.conflicted || [];
                 if (!ms.inProgress && conflicted.length === 0) {
                     $('#git-conflict-banner').slideUp(150);
+                    closeResolverModal();
+                    resetResolverState();
                     return;
                 }
 
                 var kind = ms.kind || 'merge';
+                $('#git-conflict-abort span').text('Abort ' + kind);
+                $('#git-conflict-open').hide();
+
                 if (conflicted.length) {
                     $('#git-conflict-title').text(kind.toUpperCase().replace('-', ' ') + ' CONFLICT');
-                    $('#git-conflict-text').text(conflicted.length + ' file(s) have conflicts. Resolve them in your editor or on the command line, then commit — or abort to undo this ' + kind + '.');
                     $('#git-conflict-files').html(conflicted.map(function(f) {
                         return '<div>' + escapeHtml(f) + '</div>';
                     }).join(''));
@@ -2078,8 +2554,384 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     $('#git-conflict-text').text('A ' + kind + ' is in progress. Commit to finish it, or abort to undo it.');
                     $('#git-conflict-files').empty();
                 }
-                $('#git-conflict-abort span').text('Abort ' + kind);
                 $('#git-conflict-banner').slideDown(150);
+
+                if (kind === 'merge' && conflicted.length) {
+                    fetchMergePreview();
+                } else if (conflicted.length) {
+                    $('#git-conflict-text').text(conflicted.length + ' file(s) have conflicts. Resolve them in your editor or on the command line, then commit — or abort to undo this ' + kind + '.');
+                }
+            }
+
+            function fetchMergePreview() {
+                executeGitOperation('merge/preview', {}, function(preview) {
+                    mergeResolver.preview = preview;
+                    mergeResolver.fileMergeable = !!preview.flowFileMergeable;
+                    var otherFiles = preview.otherFiles || [];
+
+                    if (!preview.flowFileMergeable) {
+                        $('#git-conflict-text').text((otherFiles.length
+                            ? otherFiles.length + ' file(s) have conflicts.'
+                            : 'Conflicts cannot be resolved automatically.')
+                            + ' Resolve them in your editor, then commit — or abort.');
+                        $('#git-conflict-open').hide();
+                        closeResolverModal();
+                        return;
+                    }
+
+                    if (otherFiles.length) {
+                        $('#git-conflict-text').text('flows.json plus ' + otherFiles.length + ' other file(s) have conflicts. Resolve the other files in your editor first, then re-open the resolver.');
+                        $('#git-conflict-open').hide();
+                        return;
+                    }
+
+                    $('#git-conflict-text').text(preview.autoMerged + ' node change(s) auto-merged. Click Resolve to choose a side for the remaining conflicts.');
+                    $('#git-conflict-open').show();
+
+                    // Initialize the commit message editor once per preview load.
+                    // Re-renders keep the textarea so we don't clobber edits.
+                    if (mergeResolver.commitMessage === null) {
+                        mergeResolver.commitMessage = preview.mergeMessage || '';
+                    }
+                    if ($('#git-resolve-modal').is(':visible')) {
+                        renderResolverModal();
+                    }
+                }, function() {
+                    $('#git-conflict-text').text('Could not preview the conflict. Use Abort to undo the merge.');
+                    $('#git-conflict-open').hide();
+                }, { quiet: true });
+            }
+
+            // ==================== Resolver Modal Rendering ====================
+
+            function renderResolverModal() {
+                if (!mergeResolver.preview || !mergeResolver.fileMergeable) return;
+                renderResolverHeader();
+                renderResolverSummary();
+                renderResolverBody();
+                renderResolverFooter();
+            }
+
+            function renderResolverHeader() {
+                var p = mergeResolver.preview;
+                var $ctx = $('#git-resolve-context').empty();
+                if (p.theirsRef || p.oursRef) {
+                    var line = $('<div></div>').css({ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' });
+                    line.append('<span class="git-resolve-chip git-resolve-chip-theirs"><i class="fa fa-cloud-download"></i> ' + escapeHtml(p.theirsRef || '?') + '</span>');
+                    line.append('<span class="git-resolve-arrow">→</span>');
+                    line.append('<span class="git-resolve-chip git-resolve-chip-ours"><i class="fa fa-code-fork"></i> ' + escapeHtml(p.oursRef || '?') + '</span>');
+                    $ctx.append(line);
+                }
+                var commitLine = function(label, info, cls) {
+                    if (!info) return '';
+                    var when = info.when ? ' · ' + escapeHtml(info.when.slice(0, 10)) : '';
+                    return '<div class="git-resolve-commitline"><span class="' + cls + '">' + label + ':</span> '
+                        + '<strong>' + escapeHtml(info.shortHash || '') + '</strong> '
+                        + escapeHtml(info.message || '') + ' · ' + escapeHtml(info.author || '') + when + '</div>';
+                };
+                $ctx.append(commitLine('theirs', p.theirsCommit, 'git-resolve-chip-theirs'));
+                $ctx.append(commitLine('ours', p.oursCommit, 'git-resolve-chip-ours'));
+            }
+
+            function renderResolverSummary() {
+                var p = mergeResolver.preview;
+                var conflicts = p.conflicts || [];
+                var counts = countResolverRows(conflicts);
+                var oursActive   = mergeResolver.fallback === 'ours'   ? ' is-active' : '';
+                var theirsActive = mergeResolver.fallback === 'theirs' ? ' is-active' : '';
+                var summary = '<span class="git-resolve-counts">'
+                    + conflicts.length + ' flow' + (conflicts.length === 1 ? '' : 's') + ' conflict · '
+                    + counts.total + ' node conflict' + (counts.total === 1 ? '' : 's') + ' · '
+                    + (p.autoMerged || 0) + ' change' + ((p.autoMerged || 0) === 1 ? '' : 's') + ' auto-merged'
+                    + '</span>'
+                    + '<button class="git-resolve-bulk-ours' + oursActive + '">Take ours for all</button>'
+                    + '<button class="git-resolve-bulk-theirs' + theirsActive + '">Take theirs for all</button>'
+                    + '<button class="git-resolve-bulk-clear">Clear choices</button>';
+                $('#git-resolve-summary').html(summary);
+            }
+
+            function countResolverRows(conflicts) {
+                var total = 0, unresolved = 0;
+                conflicts.forEach(function(unit) {
+                    var unitChoice = mergeResolver.byUnit[unit.unitId] || null;
+                    if (unit.unitConflict) {
+                        total++;
+                        if (!unitChoice && !mergeResolver.fallback) unresolved++;
+                    }
+                    (unit.perNode || []).forEach(function(row) {
+                        total++;
+                        var hasChoice = mergeResolver.byNode[row.id] || unitChoice || mergeResolver.fallback;
+                        if (!hasChoice) unresolved++;
+                    });
+                });
+                return { total: total, unresolved: unresolved };
+            }
+
+            function renderResolverBody() {
+                var conflicts = mergeResolver.preview.conflicts || [];
+                var $body = $('#git-resolve-body').empty();
+
+                if (!conflicts.length) {
+                    $body.html('<div class="git-resolve-empty"><i class="fa fa-check-circle" style="color:#2e7d32"></i> Everything auto-merged. Review the commit message below and click Resolve & commit.</div>');
+                    return;
+                }
+
+                conflicts.forEach(function(unit) {
+                    var unitChoice = mergeResolver.byUnit[unit.unitId] || null;
+                    var kindLabel = unit.kind === 'subflow' ? 'Subflow'
+                        : unit.kind === 'config' ? 'Config'
+                        : 'Flow';
+                    var $unit = $('<div class="git-resolve-unit"></div>').attr('data-unit-id', unit.unitId);
+                    $unit.data('unitId', unit.unitId);
+
+                    var perNodeCount = (unit.perNode || []).length;
+                    var $header = $(
+                        '<div class="git-resolve-unit-header">'
+                        + '<span class="git-resolve-unit-kind">' + escapeHtml(kindLabel) + '</span>'
+                        + '<span class="git-resolve-unit-label">' + escapeHtml(unit.label) + '</span>'
+                        + (perNodeCount ? '<span class="git-resolve-unit-count">' + perNodeCount + ' conflict' + (perNodeCount === 1 ? '' : 's') + '</span>' : '')
+                        + '<button class="git-resolve-unit-pick' + (unitChoice === 'ours' ? ' is-active' : '') + '" data-side="ours">Take ours</button>'
+                        + '<button class="git-resolve-unit-pick' + (unitChoice === 'theirs' ? ' is-active' : '') + '" data-side="theirs">Take theirs</button>'
+                        + '</div>'
+                    );
+                    $unit.append($header);
+
+                    if (unit.unitConflict) {
+                        var msg = unit.unitConflict === 'modify-delete'
+                            ? (unit.deletedSide === 'ours'
+                                ? 'Ours deleted this; theirs modified it. Pick "Take ours" to drop it, "Take theirs" to keep their edit.'
+                                : 'Theirs deleted this; ours modified it. Pick "Take ours" to keep your edit, "Take theirs" to drop it.')
+                            : 'Both sides added this unit with different content. Pick a side.';
+                        $unit.append('<div class="git-resolve-unit-structural">' + escapeHtml(msg) + '</div>');
+                    }
+
+                    (unit.perNode || []).forEach(function(row) {
+                        var nodeChoice = mergeResolver.byNode[row.id] || null;
+                        var isExpanded = !!mergeResolver.expanded[row.id];
+                        var structural = row.ours === null || row.theirs === null;
+                        var iconClass = structural ? 'fa fa-trash is-structural' : 'fa fa-circle is-conflict';
+
+                        var ourLabel = row.ours === null ? 'drop' : 'ours';
+                        var theirLabel = row.theirs === null ? 'drop' : 'theirs';
+                        var chevron = isExpanded ? 'fa-chevron-down' : 'fa-chevron-right';
+
+                        var $node = $('<div class="git-resolve-node"></div>')
+                            .attr('data-node-id', row.id)
+                            .data('nodeId', row.id);
+                        $node.append(
+                            '<div class="git-resolve-node-header git-resolve-node-toggle" title="Click to toggle diff">'
+                            + '<i class="git-resolve-node-chevron fa ' + chevron + '"></i>'
+                            + '<i class="git-resolve-node-icon ' + iconClass + '"></i>'
+                            + '<span class="git-resolve-node-label">' + escapeHtml(nodeDisplayLabel(row))
+                            + '<span class="git-resolve-node-id">' + escapeHtml(String(row.id)) + '</span></span>'
+                            + nodePickButton('ours', ourLabel, nodeChoice, unitChoice, mergeResolver.fallback)
+                            + nodePickButton('theirs', theirLabel, nodeChoice, unitChoice, mergeResolver.fallback)
+                            + '</div>'
+                        );
+                        if (isExpanded) {
+                            $node.append(renderFieldDiff(row));
+                        }
+                        $unit.append($node);
+                    });
+
+                    $body.append($unit);
+                });
+            }
+
+            function nodePickButton(side, label, nodeChoice, unitChoice, fallback) {
+                var isChosen = nodeChoice === side;
+                var isInherited = !nodeChoice && (unitChoice === side || (!unitChoice && fallback === side));
+                var classes = 'git-resolve-node-pick is-' + side;
+                if (isChosen) classes += ' is-active';
+                else if (isInherited) classes += ' is-active is-inherited';
+                return '<button class="' + classes + '" data-side="' + side + '">' + escapeHtml(label) + '</button>';
+            }
+
+            function nodeDisplayLabel(row) {
+                var n = row.ours || row.theirs || row.base || {};
+                var name = n.name || n.label || '';
+                var type = n.type || row.kind || 'node';
+                return name ? (type + ' "' + name + '"') : type;
+            }
+
+            // ==================== Per-Field Diff Rendering ====================
+
+            function renderFieldDiff(row) {
+                if (row.ours === null || row.theirs === null) {
+                    return renderStructuralFieldDiff(row);
+                }
+                var ours = row.ours || {};
+                var theirs = row.theirs || {};
+                var allKeys = Object.keys(ours).concat(Object.keys(theirs));
+                allKeys = allKeys.filter(function(k, i) { return allKeys.indexOf(k) === i; });
+
+                var differing = [];
+                var unchanged = [];
+                allKeys.forEach(function(key) {
+                    if (key === 'id' || key === 'type') return;
+                    var a = ours[key], b = theirs[key];
+                    if (canonicalCompare(a, b)) {
+                        unchanged.push(key);
+                    } else {
+                        differing.push(key);
+                    }
+                });
+
+                var $grid = $('<div class="git-resolve-fields"></div>');
+                $grid.append(
+                    '<div class="git-resolve-fields-header">field</div>'
+                    + '<div class="git-resolve-fields-header is-ours">ours</div>'
+                    + '<div class="git-resolve-fields-header is-theirs">theirs</div>'
+                );
+                if (!differing.length) {
+                    $grid.append('<div style="grid-column: 1 / -1; padding: 6px; color: #888; font-style: italic;">No field-level differences (the only conflict is in id/type — rare).</div>');
+                }
+                differing.forEach(function(key) {
+                    renderFieldRow($grid, row.id, key, ours[key], theirs[key]);
+                });
+                if (unchanged.length) {
+                    var showing = !!mergeResolver.showUnchanged[row.id];
+                    $grid.append(
+                        '<div class="git-resolve-fields-unchanged" data-key="' + escapeHtml(row.id) + '">'
+                        + (showing ? '▾ Hide ' : '▸ Show ') + unchanged.length + ' unchanged field' + (unchanged.length === 1 ? '' : 's')
+                        + '</div>'
+                    );
+                    if (showing) {
+                        unchanged.forEach(function(key) {
+                            renderFieldRow($grid, row.id, key, ours[key], theirs[key], true);
+                        });
+                    }
+                }
+                return $grid;
+            }
+
+            function renderStructuralFieldDiff(row) {
+                var $box = $('<div style="padding: 8px 12px; font-size: 11px; color: #5d4037;"></div>');
+                var present = row.ours || row.theirs;
+                $box.html(
+                    '<div style="margin-bottom: 6px;"><strong>'
+                    + (row.ours === null ? 'Ours deleted this node.' : 'Theirs deleted this node.')
+                    + '</strong> Picking the deletion side drops the node entirely; picking the other side keeps the edit below.</div>'
+                    + '<pre style="font-family: monospace; font-size: 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 6px 8px; max-height: 200px; overflow: auto;">'
+                    + escapeHtml(JSON.stringify(present, null, 2))
+                    + '</pre>'
+                );
+                return $box;
+            }
+
+            function renderFieldRow($grid, nodeId, key, oursVal, theirsVal, isUnchanged) {
+                var dim = isUnchanged ? ' style="opacity:0.5;"' : '';
+                $grid.append('<div class="git-resolve-field-name"' + dim + '>' + escapeHtml(key) + '</div>');
+                $grid.append(renderFieldValue(nodeId, key, oursVal, 'ours'));
+                $grid.append(renderFieldValue(nodeId, key, theirsVal, 'theirs'));
+                // For long string fields with both sides present, show an inline
+                // per-line diff below.
+                if (!isUnchanged && isLongString(oursVal) && isLongString(theirsVal)) {
+                    var diffKey = nodeId + '|' + key;
+                    if (mergeResolver.showLong[diffKey]) {
+                        $grid.append(renderInlineLongDiff(String(oursVal), String(theirsVal)));
+                    }
+                }
+            }
+
+            function renderFieldValue(nodeId, key, val, side) {
+                var cls = 'git-resolve-field-value is-' + side;
+                if (val === undefined) {
+                    return '<div class="' + cls + ' is-deleted">(absent)</div>';
+                }
+                if (val === null) {
+                    return '<div class="' + cls + '">null</div>';
+                }
+                if (typeof val === 'string') {
+                    if (isLongString(val)) {
+                        var diffKey = nodeId + '|' + key;
+                        var expanded = !!mergeResolver.showLong[diffKey];
+                        var summary = val.split('\n').length > 1
+                            ? '(' + val.split('\n').length + ' lines, ' + val.length + ' chars)'
+                            : '(' + val.length + ' chars)';
+                        var preview = expanded ? escapeHtml(val) : escapeHtml(val.slice(0, 60) + (val.length > 60 ? '…' : ''));
+                        return '<div class="' + cls + '">'
+                            + (expanded ? '<pre style="margin:0;white-space:pre-wrap;">' + preview + '</pre>' : '<span>' + preview + '</span>')
+                            + ' <a class="git-resolve-expand" data-key="' + escapeHtml(diffKey) + '">' + (expanded ? '▾ collapse' : summary + ' ▸') + '</a>'
+                            + '</div>';
+                    }
+                    return '<div class="' + cls + '">' + escapeHtml(JSON.stringify(val)) + '</div>';
+                }
+                if (typeof val === 'object') {
+                    var diffKey = nodeId + '|' + key;
+                    var expanded = !!mergeResolver.showLong[diffKey];
+                    var summary = Array.isArray(val)
+                        ? '[' + val.length + ' item' + (val.length === 1 ? '' : 's') + ']'
+                        : '{' + Object.keys(val).length + ' key' + (Object.keys(val).length === 1 ? '' : 's') + '}';
+                    return '<div class="' + cls + '">'
+                        + (expanded ? '<pre style="margin:0;white-space:pre-wrap;">' + escapeHtml(JSON.stringify(val, null, 2)) + '</pre>' : '<span>' + escapeHtml(summary) + '</span>')
+                        + ' <a class="git-resolve-expand" data-key="' + escapeHtml(diffKey) + '">' + (expanded ? '▾ collapse' : '▸ expand') + '</a>'
+                        + '</div>';
+                }
+                return '<div class="' + cls + '">' + escapeHtml(String(val)) + '</div>';
+            }
+
+            function isLongString(v) {
+                return typeof v === 'string' && (v.length > 60 || v.indexOf('\n') >= 0);
+            }
+
+            // Tiny line-by-line diff: not a real LCS, just a parallel walk that
+            // marks lines as same/add/del based on equality. Enough to make
+            // small code edits readable without pulling in a diff library.
+            function renderInlineLongDiff(a, b) {
+                var aLines = a.split('\n');
+                var bLines = b.split('\n');
+                var n = Math.max(aLines.length, bLines.length);
+                var rows = [];
+                for (var i = 0; i < n; i++) {
+                    var x = aLines[i];
+                    var y = bLines[i];
+                    if (x === y) {
+                        if (x !== undefined) rows.push('<div class="ml-line ml-same">  ' + escapeHtml(x) + '</div>');
+                    } else {
+                        if (x !== undefined) rows.push('<div class="ml-line ml-del">- ' + escapeHtml(x) + '</div>');
+                        if (y !== undefined) rows.push('<div class="ml-line ml-add">+ ' + escapeHtml(y) + '</div>');
+                    }
+                }
+                return '<div class="git-resolve-multiline">' + rows.join('') + '</div>';
+            }
+
+            // Compare two JSON-compatible values ignoring object key order.
+            function canonicalCompare(a, b) {
+                if (a === b) return true;
+                if (a === null || b === null) return a === b;
+                if (typeof a !== typeof b) return false;
+                if (typeof a !== 'object') return a === b;
+                if (Array.isArray(a) !== Array.isArray(b)) return false;
+                if (Array.isArray(a)) {
+                    if (a.length !== b.length) return false;
+                    for (var i = 0; i < a.length; i++) if (!canonicalCompare(a[i], b[i])) return false;
+                    return true;
+                }
+                var ak = Object.keys(a).sort(), bk = Object.keys(b).sort();
+                if (ak.length !== bk.length) return false;
+                for (var j = 0; j < ak.length; j++) {
+                    if (ak[j] !== bk[j]) return false;
+                    if (!canonicalCompare(a[ak[j]], b[bk[j]])) return false;
+                }
+                return true;
+            }
+
+            function renderResolverFooter() {
+                var conflicts = mergeResolver.preview.conflicts || [];
+                var counts = countResolverRows(conflicts);
+                var $progress = $('#git-resolve-progress');
+                if (!conflicts.length) {
+                    $progress.text('Ready to commit (everything auto-merged).').addClass('is-ready');
+                } else if (mergeResolver.fallback) {
+                    $progress.text('Fallback: take ' + mergeResolver.fallback + ' for everything not explicitly chosen.').removeClass('is-ready');
+                } else if (counts.unresolved === 0) {
+                    $progress.text('All ' + counts.total + ' conflict(s) resolved.').addClass('is-ready');
+                } else {
+                    $progress.text(counts.unresolved + ' of ' + counts.total + ' conflict(s) still need a choice.').removeClass('is-ready');
+                }
+                var ready = !conflicts.length || counts.unresolved === 0 || !!mergeResolver.fallback;
+                $('#git-resolve-commit').prop('disabled', !ready);
             }
 
             function updateSyncIndicators(ahead, behind, hasTracking) {
