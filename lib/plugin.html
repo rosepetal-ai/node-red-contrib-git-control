@@ -110,38 +110,265 @@
     background-color: var(--red-ui-secondary-background, #fff);
 }
 
-.git-branch-current {
+/* Two-row branch picker layout: each row is [icon] [combo] [right-cell].
+   Right-cell on the branch row is the ⋮ button; on the upstream row an empty
+   spacer of the same width, so both combo inputs share identical left/right
+   edges regardless of which row has the menu. */
+.git-branch-row {
+    position: relative;     /* anchor for the menu dropdown */
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
-    color: var(--red-ui-text-color, #333);
-    font-weight: 500;
+}
+.git-branch-row + .git-branch-row { margin-top: 6px; }
+
+.git-branch-row-icon {
+    flex: 0 0 18px;
+    width: 18px;
+    text-align: center;
     font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
+    color: var(--red-ui-text-color-secondary, #888);
+    cursor: pointer;
+    transition: color 0.15s ease;
 }
+.git-branch-row-icon:hover { color: var(--red-ui-text-color, #333); }
+.git-branch-row-icon-fork { color: #4285f4; }
+.git-branch-row-icon-fork:hover { color: #1a73e8; }
 
-.git-branch-current i {
-    color: #4285f4;
-}
+.git-branch-row-combo { flex: 1 1 auto; min-width: 0; }
+.git-branch-row-combo .git-combo { width: 100%; }
 
-.git-branch-selector {
-    width: 100%;
-    padding: 6px 8px;
+.git-branch-row-spacer { flex: 0 0 34px; }
+
+.git-branch-icon-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    box-sizing: border-box;
     border: 1px solid var(--red-ui-form-input-border-color, #ccc);
-    border-radius: 4px;
+    border-radius: 6px;
+    background-color: var(--red-ui-form-input-background-color, #fff);
+    color: var(--red-ui-text-color-secondary, #666);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.git-branch-icon-btn:hover {
+    background-color: var(--red-ui-secondary-background-hover, #eee);
+    color: var(--red-ui-text-color, #333);
+}
+
+/* ==================== Type-to-filter combobox ==================== */
+.git-combo { position: relative; min-width: 0; }
+
+.git-combo-input {
+    width: 100%;
+    min-width: 0;     /* text inputs default to ~20ch; without this they refuse to shrink in a flex row */
+    height: 34px;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    border: 1px solid var(--red-ui-form-input-border-color, #ccc);
+    border-radius: 6px;
     font-size: 12px;
     background-color: var(--red-ui-form-input-background-color, #fff);
     color: var(--red-ui-text-color, #333);
-    cursor: pointer;
 }
 
-.git-branch-selector:focus {
+.git-combo-input:focus {
     outline: none;
     border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.18);
+}
+
+.git-combo-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+    background-color: var(--red-ui-primary-background, #fff);
+    border: 1px solid var(--red-ui-secondary-border-color, #ccc);
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.git-combo-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    color: var(--red-ui-text-color, #333);
+}
+
+.git-combo-option .git-combo-label {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.git-combo-option .git-combo-mark {
+    flex: 0 0 auto;
+    width: 12px;
+    font-size: 11px;
+    color: #4285f4;
+}
+
+.git-combo-option:hover,
+.git-combo-option.active {
+    background-color: rgba(66, 133, 244, 0.12);
+}
+
+.git-combo-option.current { font-weight: 600; }
+
+/* "Create new" row — a branch (or remote branch) that doesn't exist yet. */
+.git-combo-option-new .git-combo-mark,
+.git-combo-option-new .git-combo-label { color: #2e9e5b; }
+.git-combo-option-new .git-combo-label { font-weight: 600; }
+
+.git-combo-badge {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 999px;
+    color: #2e9e5b;
+    background-color: rgba(46, 158, 91, 0.14);
+}
+
+/* Remote-only entry — picking it DWIMs a local tracking branch on checkout. */
+.git-combo-option-remote .git-combo-mark { color: var(--red-ui-text-color-secondary, #888); }
+.git-combo-option-remote .git-combo-label { color: var(--red-ui-text-color-secondary, #777); }
+.git-combo-option-remote .git-combo-badge {
+    color: var(--red-ui-text-color-secondary, #888);
+    background-color: rgba(120, 120, 120, 0.14);
+}
+
+.git-combo-empty {
+    padding: 10px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--red-ui-text-color-secondary, #999);
+}
+
+/* Inline mode: list is always open and sits in normal flow (used inside the
+   picker modal, where an absolute dropdown would be clipped by the body). */
+.git-combo-inline .git-combo-list {
+    position: static;
+    margin-top: 8px;
+    max-height: 46vh;
+    box-shadow: none;
+}
+
+#git-prompt-combo .git-combo-input { height: 38px; font-size: 13px; }
+
+.git-branch-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 20;
+    min-width: 230px;
+    padding: 4px;
+    background-color: var(--red-ui-primary-background, #fff);
+    border: 1px solid var(--red-ui-secondary-border-color, #ccc);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.git-branch-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    color: var(--red-ui-text-color, #333);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.git-branch-menu-item:hover {
+    background-color: var(--red-ui-secondary-background-hover, #f0f0f0);
+}
+
+.git-branch-menu-item i {
+    width: 14px;
+    text-align: center;
+    color: var(--red-ui-text-color-secondary, #888);
+}
+
+/* ==================== Prompt modal ==================== */
+
+.git-prompt-content {
+    max-width: 420px;
+}
+
+.git-prompt-hint {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: var(--red-ui-text-color-secondary, #666);
+}
+
+.git-prompt-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--red-ui-form-input-border-color, #ccc);
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: var(--red-ui-form-input-background-color, #fff);
+    color: var(--red-ui-text-color, #333);
+    box-sizing: border-box;
+}
+
+.git-prompt-input:focus {
+    outline: none;
+    border-color: #4285f4;
+}
+
+.git-prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.git-prompt-actions .git-primary-btn,
+.git-secondary-btn {
+    width: auto;
+    padding: 8px 16px;
+}
+
+.git-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--red-ui-form-input-border-color, #ccc);
+    background-color: var(--red-ui-secondary-background, #fff);
+    color: var(--red-ui-text-color, #333);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.git-secondary-btn:hover {
+    background-color: var(--red-ui-secondary-background-hover, #eee);
 }
 
 /* ==================== Changes Section ==================== */
@@ -291,6 +518,10 @@
 
 .git-flow-unit:hover {
     background-color: var(--red-ui-secondary-background-hover, #f0f0f0);
+}
+
+.git-flow-unit-clickable {
+    cursor: pointer;
 }
 
 .git-flow-unit-status {
@@ -669,6 +900,7 @@
 }
 
 .git-branch-chip {
+    display: inline-block;
     font-size: 10px;
     font-weight: 600;
     color: #fff;
@@ -678,6 +910,19 @@
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* The branch the commit detail's chips belong to vs the rest */
+.git-branch-chip-current {
+    background: #27AE60;
+}
+
+.git-branch-chip-remote {
+    background: transparent;
+    color: var(--red-ui-text-color-secondary, #888);
+    border: 1px solid var(--red-ui-secondary-border-color, #bbb);
+}
+
+.git-commit-branches { line-height: 1.9; }
 
 /* Expanded commit detail (inline, below the clicked row) */
 .git-commit-detail {
@@ -1026,11 +1271,46 @@ body.red-ui-theme-midnight .git-btn-icon:hover {
     background-color: #3d3d3d;
 }
 
-body.red-ui-theme-midnight .git-branch-selector,
+body.red-ui-theme-midnight .git-branch-icon-btn,
+body.red-ui-theme-midnight .git-prompt-input,
+body.red-ui-theme-midnight .git-secondary-btn,
 body.red-ui-theme-midnight .git-modal-content {
     background-color: #2d2d2d;
     color: #ddd;
     border-color: #444;
+}
+
+body.red-ui-theme-midnight .git-branch-menu {
+    background-color: #2d2d2d;
+    border-color: #444;
+}
+
+body.red-ui-theme-midnight .git-branch-menu-item {
+    color: #ddd;
+}
+
+body.red-ui-theme-midnight .git-branch-icon-btn:hover,
+body.red-ui-theme-midnight .git-branch-menu-item:hover,
+body.red-ui-theme-midnight .git-secondary-btn:hover {
+    background-color: #3d3d3d;
+}
+
+body.red-ui-theme-midnight .git-combo-input {
+    background-color: #2d2d2d;
+    color: #ddd;
+    border-color: #444;
+}
+
+body.red-ui-theme-midnight .git-combo-list {
+    background-color: #2d2d2d;
+    border-color: #444;
+}
+
+body.red-ui-theme-midnight .git-combo-option { color: #ddd; }
+
+body.red-ui-theme-midnight .git-combo-option:hover,
+body.red-ui-theme-midnight .git-combo-option.active {
+    background-color: rgba(66, 133, 244, 0.22);
 }
 
 body.red-ui-theme-midnight .git-change-item:hover {
@@ -1403,13 +1683,25 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
 
                     <!-- Branch Section -->
                     <div class="git-branch-section">
-                        <div class="git-branch-current">
-                            <i class="fa fa-code-fork"></i>
-                            <span id="git-current-branch-name">main</span>
+                        <div class="git-branch-row" id="git-branch-row">
+                            <i class="fa fa-code-fork git-branch-row-icon git-branch-row-icon-fork" id="git-branch-row-icon-btn" title="Branch — pick or create"></i>
+                            <div id="git-branch-combo" class="git-branch-row-combo"></div>
+                            <button class="git-branch-icon-btn" id="git-branch-menu-btn" title="Branch actions">
+                                <i class="fa fa-ellipsis-v"></i>
+                            </button>
+                            <div class="git-branch-menu" id="git-branch-menu" style="display: none;">
+                                <button class="git-branch-menu-item" data-act="create"><i class="fa fa-plus"></i> New branch from current…</button>
+                                <button class="git-branch-menu-item" data-act="merge"><i class="fa fa-code-fork"></i> Merge branch into current…</button>
+                                <button class="git-branch-menu-item" data-act="rename"><i class="fa fa-pencil"></i> Rename current branch…</button>
+                                <button class="git-branch-menu-item" data-act="delete"><i class="fa fa-trash"></i> Delete a branch…</button>
+                                <button class="git-branch-menu-item" data-act="orphan"><i class="fa fa-plus-square-o"></i> New orphan branch…</button>
+                            </div>
                         </div>
-                        <select class="git-branch-selector" id="git-branch-selector">
-                            <option value="">Loading branches...</option>
-                        </select>
+                        <div class="git-branch-row" id="git-upstream-row" title="Upstream — the remote branch this local branch tracks. Defaults to origin/&lt;branch&gt; on first push.">
+                            <i class="fa fa-cloud git-branch-row-icon" id="git-upstream-row-icon-btn" title="Upstream — pick, set or create"></i>
+                            <div id="git-upstream-combo" class="git-branch-row-combo"></div>
+                            <span class="git-branch-row-spacer" aria-hidden="true"></span>
+                        </div>
                     </div>
 
                     <!-- Changes Section (single list - commit stages everything) -->
@@ -1489,6 +1781,28 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                         </div>
                     </div>
 
+                    <!-- Generic input prompt (branch ops) -->
+                    <div class="git-modal" id="git-prompt-modal" style="display: none;">
+                        <div class="git-modal-overlay" id="git-prompt-overlay"></div>
+                        <div class="git-modal-content git-prompt-content">
+                            <div class="git-modal-header">
+                                <h4 id="git-prompt-title">Input</h4>
+                                <button class="git-modal-close" id="git-prompt-close">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="git-modal-body">
+                                <p class="git-prompt-hint" id="git-prompt-hint"></p>
+                                <input type="text" class="git-prompt-input" id="git-prompt-input" spellcheck="false" autocomplete="off" />
+                                <div id="git-prompt-combo" style="display: none;"></div>
+                                <div class="git-prompt-actions">
+                                    <button class="git-secondary-btn" id="git-prompt-cancel">Cancel</button>
+                                    <button class="git-primary-btn git-prompt-ok" id="git-prompt-confirm">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Flow / File Diff Modal -->
                     <div class="git-modal" id="git-diff-modal" style="display: none;">
                         <div class="git-modal-overlay" id="git-diff-overlay"></div>
@@ -1512,6 +1826,21 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
             var allCommits = [];
             var currentBranch = '';
             var projectInfo = null;
+            // Last /branches response, kept so the branch action menu can list branches.
+            var lastBranches = null;
+            // The branch picker combobox (created after the markup is in the DOM).
+            var branchCombo = null;
+            // The upstream / remote-branch picker (Node-RED style "Find or create
+            // a remote branch") — drives set-upstream / publish-push.
+            var upstreamCombo = null;
+            // Snapshots from the last /branches load, kept so the combos' predicates
+            // (isRemote / isNew) can answer per-render without re-fetching.
+            var currentRemoteOnly = [];   // bare names of remote-only branches
+            var currentRemoteRefs = [];   // full "origin/x" refs for the upstream combo
+            // The combobox shown inside the prompt modal in select mode (built per open).
+            var promptCombo = null;
+            // Pending callback for the generic prompt modal (set while it is open).
+            var promptCallback = null;
             // Hash of the commit whose inline detail panel is open (so it survives a refresh).
             var expandedHash = null;
             // Which ref a node/unit revert inside the diff modal targets, set when the modal opens.
@@ -1548,6 +1877,46 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 enableOnEdit: false
             });
 
+            // Build the branch picker (type-to-filter) into its mount.
+            // Lists local branches + remote-only branches (rendered with a cloud
+            // marker; picking one DWIMs a local tracking branch on checkout).
+            // Typing a name not in either list offers a "+ Create" row.
+            branchCombo = createCombo({
+                placeholder: 'Find or create a branch',
+                allowCreate: true,
+                normalizeCreate: function(t) { return t.trim() || null; },
+                isRemote: function(v) { return currentRemoteOnly.indexOf(v) !== -1; },
+                isNew: function(v) {
+                    var locals = lastBranches ? (lastBranches.local || []) : [];
+                    return locals.indexOf(v) === -1 && currentRemoteOnly.indexOf(v) === -1;
+                },
+                onPick: switchToBranch
+            });
+            $('#git-branch-combo').append(branchCombo.$el);
+
+            // Upstream picker: lists remote branches; picking one sets it as the
+            // current branch's upstream, typing a new name creates that remote
+            // branch (push -u) on confirm.
+            upstreamCombo = createCombo({
+                placeholder: 'Find or create a remote branch',
+                allowCreate: true,
+                normalizeCreate: function(t) {
+                    t = (t || '').replace(/^\/+|\/+$/g, '');
+                    if (!t) return null;
+                    return t.indexOf('/') === -1 ? 'origin/' + t : t;
+                },
+                isNew: function(v) { return currentRemoteRefs.indexOf(v) === -1; },
+                remoteBadge: 'upstream',
+                onPick: handleUpstreamPick
+            });
+            $('#git-upstream-combo').append(upstreamCombo.$el);
+
+            // Clicking the row icon opens its combo — a bigger target than the
+            // tiny caret, and the only visible affordance once the redundant
+            // header was removed.
+            $('#git-branch-row-icon-btn').on('mousedown', function(e) { e.preventDefault(); branchCombo.open(); });
+            $('#git-upstream-row-icon-btn').on('mousedown', function(e) { e.preventDefault(); upstreamCombo.open(); });
+
             // Initialize UI handlers AFTER sidebar is added to DOM
             setupEventHandlers();
 
@@ -1575,8 +1944,30 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 $('#git-btn-push').on('click', handlePush);
                 $('#git-btn-refresh').on('click', loadAll);
 
-                // Branch selector
-                $('#git-branch-selector').on('change', handleBranchSwitch);
+                // (The branch picker is a combobox; it calls switchToBranch on pick.)
+
+                // Branch action menu (create / merge / rename / delete / orphan)
+                $('#git-branch-menu-btn').on('click', function(e) {
+                    e.stopPropagation();
+                    $('#git-branch-menu').toggle();
+                });
+                $('#git-branch-menu').on('click', '.git-branch-menu-item', function() {
+                    var act = $(this).attr('data-act');
+                    $('#git-branch-menu').hide();
+                    handleBranchMenu(act);
+                });
+                // Close the menu on any outside click (namespaced so re-binds don't stack).
+                $(document).off('click.gitbranchmenu').on('click.gitbranchmenu', function() {
+                    $('#git-branch-menu').hide();
+                });
+
+                // Prompt modal (branch name / branch picker)
+                $('#git-prompt-cancel, #git-prompt-close, #git-prompt-overlay').on('click', closePrompt);
+                $('#git-prompt-confirm').on('click', submitPrompt);
+                $('#git-prompt-input').on('keydown', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); submitPrompt(); }
+                    else if (e.key === 'Escape') { closePrompt(); }
+                });
 
                 // Commit button
                 $('#git-btn-commit').on('click', handleCommit);
@@ -1644,11 +2035,6 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                         if (result.success) {
                             projectInfo = result;
                             $('#git-project-name').text(result.projectName);
-                            var branchLabel = result.currentBranch;
-                            if (!branchLabel) {
-                                branchLabel = result.lastKnownBranch ? 'detached (' + result.lastKnownBranch + ')' : 'detached HEAD';
-                            }
-                            $('#git-current-branch-name').text(branchLabel);
                             currentBranch = result.currentBranch;
 
                             // Update sync indicators
@@ -1732,22 +2118,299 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     data: JSON.stringify({}),
                     contentType: 'application/json',
                     success: function(result) {
-                        if (result.success) {
-                            var $selector = $('#git-branch-selector');
-                            $selector.empty();
-
-                            result.all.forEach(function(branch) {
-                                var isCurrent = branch === result.current;
-                                $selector.append(
-                                    $('<option>')
-                                        .val(branch)
-                                        .text(branch)
-                                        .prop('selected', isCurrent)
-                                );
-                            });
+                        if (!result.success) return;
+                        lastBranches = result;
+                        currentRemoteOnly = result.remoteOnly || [];
+                        currentRemoteRefs = result.remoteBranches || [];
+                        if (branchCombo) {
+                            branchCombo.setValues(result.all || []);
+                            branchCombo.setValue(result.current || '');
                         }
+                        if (upstreamCombo) {
+                            // The current branch's upstream goes in the input (marked as
+                            // "current" in the list); not tracking → empty + a placeholder
+                            // that surfaces what the next push will do.
+                            upstreamCombo.setValues(result.remoteBranches || []);
+                            upstreamCombo.setValue(result.tracking || '');
+                            upstreamCombo.$input.attr('placeholder', result.tracking
+                                ? 'Find or create a remote branch'
+                                : (result.current ? 'Not tracking — push creates origin/' + result.current
+                                                  : 'Find or create a remote branch'));
+                        }
+                        if (branchCombo) {
+                            branchCombo.$input.attr('placeholder', result.current
+                                ? 'Find or create a branch'
+                                : 'Detached HEAD — pick a branch to switch');
+                        }
+                        // Detached HEAD has no upstream concept — hide the row.
+                        $('#git-upstream-row').toggle(!!result.current);
                     }
                 });
+            }
+
+            // Local branch names (the ones we can merge from / delete), derived from
+            // the simple-git branch map so remote-only names never sneak in.
+            function localBranchNames() {
+                if (!lastBranches || !lastBranches.branches) return [];
+                return Object.keys(lastBranches.branches).filter(function(n) {
+                    return n.indexOf('remotes/') !== 0;
+                });
+            }
+
+            // ---------- Type-to-filter combobox ----------
+            // A text input + filtered dropdown list. opts: { values, value,
+            // placeholder, onPick(value) }. Typing filters in real time; picking
+            // (click / Enter) fires onPick. An invalid typed value is restored on
+            // blur, so the control never holds a value that isn't in the list.
+            function createCombo(opts) {
+                opts = opts || {};
+                var values = opts.values || [];
+                var lastValue = opts.value || '';   // the marked "current" value
+                var highlighted = -1;
+                var inline = !!opts.inline;         // always-open panel (used in modals)
+                var isNew = typeof opts.isNew === 'function' ? opts.isNew : function() { return false; };
+                var isRemote = typeof opts.isRemote === 'function' ? opts.isRemote : function() { return false; };
+                var remoteBadge = opts.remoteBadge || 'remote';
+
+                var $wrap = $('<div class="git-combo">');
+                if (inline) $wrap.addClass('git-combo-inline');
+                var $input = $('<input type="text" class="git-combo-input" autocomplete="off" spellcheck="false" size="1">')
+                    .attr('placeholder', opts.placeholder || '');
+                if (!inline) $input.val(lastValue); // inline keeps the filter empty so the whole list shows
+                var $list = $('<div class="git-combo-list" style="display:none;">');
+                $wrap.append($input, $list);
+
+                // A value the user typed that isn't in the list yet — offered as a
+                // "create" row when allowCreate is on (e.g. a new remote branch).
+                function createCandidate(filter) {
+                    if (!opts.allowCreate) return null;
+                    var t = (filter || '').trim();
+                    if (!t) return null;
+                    var cand = opts.normalizeCreate ? opts.normalizeCreate(t) : t;
+                    return (cand && values.indexOf(cand) === -1) ? cand : null;
+                }
+                function matching(filter) {
+                    var f = (filter || '').toLowerCase();
+                    var out = values.filter(function(v) { return v.toLowerCase().indexOf(f) !== -1; });
+                    var cand = createCandidate(filter);
+                    if (cand && out.indexOf(cand) === -1) out.unshift(cand);
+                    return out;
+                }
+                function optionRow(v, i) {
+                    var $o = $('<div class="git-combo-option">').attr('data-val', v);
+                    if (i === highlighted) $o.addClass('active');
+                    if (isNew(v)) {
+                        $o.addClass('git-combo-option-new')
+                          .append($('<i class="fa fa-plus git-combo-mark">'))
+                          .append($('<span class="git-combo-label">').text(v))
+                          .append($('<span class="git-combo-badge">').text('will create'));
+                    } else if (isRemote(v)) {
+                        $o.addClass('git-combo-option-remote')
+                          .append($('<i class="fa fa-cloud git-combo-mark">'))
+                          .append($('<span class="git-combo-label">').text(v))
+                          .append($('<span class="git-combo-badge">').text(remoteBadge));
+                    } else {
+                        if (v === lastValue) $o.addClass('current').append($('<i class="fa fa-check git-combo-mark">'));
+                        $o.append($('<span class="git-combo-label">').text(v));
+                    }
+                    return $o;
+                }
+                function render(list) {
+                    $list.empty();
+                    if (!list.length) { $list.append($('<div class="git-combo-empty">').text('No matches')); }
+                    else list.forEach(function(v, i) { $list.append(optionRow(v, i)); });
+                    $list.show();
+                    $wrap.addClass('git-combo-open');
+                }
+                function refilter() { highlighted = -1; render(matching($input.val())); }
+                function showAll() { highlighted = -1; render(inline ? matching($input.val()) : values); }
+                function close() { if (!inline) { $list.hide(); $wrap.removeClass('git-combo-open'); } }
+                function restore() { $input.val(lastValue); }
+                function pick(v) { lastValue = v; $input.val(v); close(); if (opts.onPick) opts.onPick(v); }
+                function ensureVisible(sel) { var a = $list.find(sel || '.git-combo-option.active')[0]; if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' }); }
+                function isOpen() { return inline || $list.is(':visible'); }
+
+                if (inline) { render(matching('')); ensureVisible('.git-combo-option.current'); }
+
+                $input.on('focus', function() { this.select(); if (!inline) showAll(); else ensureVisible('.git-combo-option.current'); });
+                $input.on('click', function(e) { e.stopPropagation(); if (!isOpen()) showAll(); });
+                $input.on('input', refilter);
+                $input.on('keydown', function(e) {
+                    var list = isOpen() ? matching($input.val()) : values;
+                    if (e.key === 'ArrowDown') { e.preventDefault(); if (!isOpen()) showAll(); highlighted = Math.min(highlighted + 1, list.length - 1); render(list); ensureVisible(); }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); highlighted = Math.max(highlighted - 1, 0); render(list); ensureVisible(); }
+                    else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        var v = (highlighted >= 0 && list[highlighted]) ? list[highlighted]
+                            : ($input.val().trim() && list.length ? list[0] : null); // top suggestion for the typed text
+                        if (v) pick(v);
+                    }
+                    else if (e.key === 'Escape') { close(); restore(); }
+                });
+                $list.on('mousedown', '.git-combo-option', function(e) { e.preventDefault(); pick($(this).attr('data-val')); });
+                if (!inline) $input.on('blur', function() {
+                    setTimeout(function() { close(); if (values.indexOf($input.val()) === -1 && !createCandidate($input.val())) restore(); }, 150);
+                });
+
+                // Long values get truncated in narrow sidebars; the input's hover
+                // title surfaces the full string, and scrollLeft=0 keeps the START
+                // of the value visible (otherwise focus history can leave it scrolled
+                // to the end, hiding the "origin/" prefix and the leading characters).
+                function applyValueVisuals() {
+                    $input.attr('title', lastValue || '');
+                    if (!inline && $input[0]) $input[0].scrollLeft = 0;
+                }
+                applyValueVisuals();
+
+                return {
+                    $el: $wrap,
+                    $input: $input,
+                    open: function() { $input.focus(); if (!inline) showAll(); },
+                    getValue: function() { return $input.val(); },
+                    setValue: function(v) {
+                        lastValue = v || '';
+                        if (!inline) $input.val(lastValue);
+                        applyValueVisuals();
+                        if (inline) refilter();
+                    },
+                    setValues: function(vs) { values = vs || []; if (inline) refilter(); },
+                    focus: function() { $input.focus(); }
+                };
+            }
+
+            // ---------- Generic prompt modal (branch ops) ----------
+
+            // opts: { title, hint, mode:'text'|'select', value, values:[], confirmLabel, onConfirm(value) }
+            function openPrompt(opts) {
+                promptCallback = opts.onConfirm || null;
+                $('#git-prompt-title').text(opts.title || 'Input');
+                $('#git-prompt-hint').text(opts.hint || '');
+                $('#git-prompt-confirm').text(opts.confirmLabel || 'OK');
+
+                var $combo = $('#git-prompt-combo').empty();
+                promptCombo = null;
+
+                if (opts.mode === 'select') {
+                    // A picker: an always-open, type-to-filter list. Picking confirms
+                    // immediately, so the OK button is hidden (Cancel stays).
+                    promptCombo = createCombo({
+                        values: opts.values || [],
+                        value: opts.value || '',
+                        inline: true,
+                        isNew: opts.isNew,
+                        allowCreate: opts.allowCreate,
+                        normalizeCreate: opts.normalizeCreate,
+                        placeholder: 'Type to filter…',
+                        onPick: function(v) {
+                            var cb = promptCallback;
+                            closePrompt();
+                            if (cb && v) cb(v);
+                        }
+                    });
+                    $combo.append(promptCombo.$el).show();
+                    $('#git-prompt-input').hide();
+                    $('#git-prompt-confirm').hide();
+                } else {
+                    $('#git-prompt-input').val(opts.value || '').show();
+                    $combo.hide();
+                    $('#git-prompt-confirm').show();
+                }
+                $('#git-prompt-modal').fadeIn(150);
+                setTimeout(function() {
+                    if (promptCombo) promptCombo.focus();
+                    else $('#git-prompt-input').focus().select();
+                }, 160);
+            }
+
+            function closePrompt() {
+                $('#git-prompt-modal').fadeOut(120);
+                $('#git-prompt-combo').empty();
+                promptCombo = null;
+                promptCallback = null;
+            }
+
+            // OK button — only used in text mode (select mode confirms on pick).
+            function submitPrompt() {
+                var cb = promptCallback;
+                var val = $('#git-prompt-input').val().trim();
+                closePrompt();
+                if (cb) cb(val);
+            }
+
+            // Ask for a free-text value; onConfirm only runs for a non-empty value.
+            function promptText(title, hint, value, onConfirm) {
+                openPrompt({ title: title, hint: hint, value: value, mode: 'text',
+                    onConfirm: function(v) { if (v) onConfirm(v); } });
+            }
+
+            // Ask the user to pick one of a list of strings (type-to-filter).
+            // `defaultValue` (optional) marks the current item. `extra` (optional)
+            // forwards { isNew, allowCreate, normalizeCreate } so a picker can also
+            // create a value that isn't in the list yet.
+            function promptSelect(title, hint, values, onConfirm, defaultValue, extra) {
+                extra = extra || {};
+                if ((!values || values.length === 0) && !extra.allowCreate) {
+                    RED.notify('No branches available for this action', 'warning');
+                    return;
+                }
+                openPrompt({ title: title, hint: hint, mode: 'select',
+                    values: values || [],
+                    value: (defaultValue && (values || []).indexOf(defaultValue) !== -1) ? defaultValue : '',
+                    isNew: extra.isNew, allowCreate: extra.allowCreate, normalizeCreate: extra.normalizeCreate,
+                    onConfirm: function(v) { if (v) onConfirm(v); } });
+            }
+
+            // ---------- Branch action menu ----------
+
+            function handleBranchMenu(act) {
+                var current = currentBranch;
+                var others = localBranchNames().filter(function(b) { return b !== current; });
+
+                if (act === 'create') {
+                    var from = current || 'the current commit';
+                    promptText('New branch', 'Branches from ' + from + ' and checks it out (your uncommitted changes come along).', '',
+                        function(name) {
+                            executeGitOperation('create-branch', { name: name, checkout: true }, afterPossibleConflict);
+                        });
+
+                } else if (act === 'merge') {
+                    promptSelect('Merge into ' + (current || 'current branch'),
+                        'Pick a branch to merge into the current branch.', others,
+                        function(ref) { executeGitOperation('merge', { ref: ref }, afterPossibleConflict); });
+
+                } else if (act === 'rename') {
+                    if (!current) { RED.notify('Cannot rename in detached HEAD', 'warning'); return; }
+                    promptText('Rename branch', 'New name for "' + current + '".', current,
+                        function(to) {
+                            if (to === current) return;
+                            executeGitOperation('rename-branch', { from: current, to: to },
+                                function() { loadAll(); });
+                        });
+
+                } else if (act === 'delete') {
+                    promptSelect('Delete a branch',
+                        'Pick a branch to delete (the current branch cannot be deleted).', others,
+                        function(name) {
+                            executeGitOperation('delete-branch', { name: name },
+                                function() { loadAll(); },
+                                function(err) { offerForceDelete(name, err); });
+                        });
+
+                } else if (act === 'orphan') {
+                    promptText('New orphan branch',
+                        'Starts with no history; your current files become its first commit.', '',
+                        function(name) {
+                            if (!confirm('Create orphan branch "' + name + '"?\n\nIt starts with NO commit history. Your current working files are carried over so you can commit them as the branch\'s first commit.')) return;
+                            executeGitOperation('orphan-branch', { name: name, keepContent: true }, afterPossibleConflict);
+                        });
+                }
+            }
+
+            // git refuses to delete a branch with unmerged commits; offer a force delete.
+            function offerForceDelete(name, err) {
+                if (!/not fully merged|not yet merged|not merged/i.test(err || '')) return;
+                if (!confirm('Branch "' + name + '" has commits not merged anywhere else.\n\nForce-delete it anyway? Those commits will be lost.')) return;
+                executeGitOperation('delete-branch', { name: name, force: true, confirmed: true }, function() { loadAll(); });
             }
 
             function loadCommits(maxCount) {
@@ -1966,6 +2629,7 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                             '<button class="git-commit-action git-copy-hash" title="Copy full hash"><i class="fa fa-clipboard"></i></button></div>' +
                         '<div><span class="k">author</span> ' + escapeHtml(commit.author) + ' &lt;' + escapeHtml(commit.email || '') + '&gt;</div>' +
                         '<div><span class="k">date</span> ' + escapeHtml(commit.date) + '</div>' +
+                        '<div><span class="k">branches</span> <span class="git-commit-branches" title="Branches that contain this commit"><i class="fa fa-spinner fa-spin"></i></span></div>' +
                         '<div class="git-commit-detail-msg">' + escapeHtml(commit.message) + '</div>' +
                     '</div>' +
                     '<div class="git-commit-detail-actions">' +
@@ -1990,9 +2654,38 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 });
                 $d.find('.git-copy-hash').on('click', function(e) { e.stopPropagation(); copyText(commit.hash); });
 
+                loadCommitBranches(commit, $d.find('.git-commit-branches'));
                 loadCommitFlows(commit, base, $d.find('.git-commit-flows'));
                 loadCommitFiles(commit, base, $d.find('.git-commit-files'));
                 return $d;
+            }
+
+            // Show which branches contain this commit (local + remote) so the user
+            // can see what branch a commit is on / came from. Fetched on expand.
+            function loadCommitBranches(commit, $target) {
+                $.ajax({
+                    url: 'rosepetal-git/commit-branches',
+                    type: 'POST',
+                    data: JSON.stringify({ commitRef: commit.hash }),
+                    contentType: 'application/json',
+                    success: function(res) {
+                        if (!res || !res.success) { $target.text('—'); return; }
+                        var locals = res.branches || [];
+                        var remotes = res.remoteBranches || [];
+                        if (!locals.length && !remotes.length) {
+                            $target.html('<span class="git-detail-sub">no branch contains this commit</span>');
+                            return;
+                        }
+                        var chips = locals.map(function(b) {
+                            var cur = b === res.current ? ' git-branch-chip-current' : '';
+                            return '<span class="git-branch-chip' + cur + '">' + escapeHtml(b) + '</span>';
+                        }).concat(remotes.map(function(b) {
+                            return '<span class="git-branch-chip git-branch-chip-remote"><i class="fa fa-cloud"></i> ' + escapeHtml(b) + '</span>';
+                        }));
+                        $target.html(chips.join(' '));
+                    },
+                    error: function() { $target.text('—'); }
+                });
             }
 
             // The per-flow breakdown of what a commit changed. Each unit can be
@@ -2092,9 +2785,7 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     contentType: 'application/json',
                     success: function(validation) {
                         if (validation.canCheckout) {
-                            executeGitOperation('checkout', { commitRef: hash }, function() {
-                                reloadFlowsFromDisk(function() { loadAll(); });
-                            });
+                            executeGitOperation('checkout', { commitRef: hash }, afterPossibleConflict);
                         } else {
                             showBlockingError(validation.blockers, validation);
                         }
@@ -2110,21 +2801,16 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 if (act === 'checkout') {
                     checkoutCommit(h);
                 } else if (act === 'branch') {
-                    var name = prompt('New branch name (starting at ' + short + '):');
-                    if (!name) return;
-                    executeGitOperation('create-branch', { name: name, startPoint: h, checkout: true }, function() {
-                        reloadFlowsFromDisk(function() { loadAll(); });
+                    promptText('New branch name', 'Starting at ' + short, '', function(name) {
+                        if (!name) return;
+                        executeGitOperation('create-branch', { name: name, startPoint: h, checkout: true }, afterPossibleConflict);
                     });
                 } else if (act === 'reset-mixed') {
                     if (!confirm('Reset the current branch to ' + short + '?\n\nCommits after it are removed from the branch, but your working files are KEPT as uncommitted changes.')) return;
-                    executeGitOperation('reset', { commitRef: h, resetMode: 'mixed' }, function() {
-                        reloadFlowsFromDisk(function() { loadAll(); });
-                    });
+                    executeGitOperation('reset', { commitRef: h, resetMode: 'mixed' }, afterPossibleConflict);
                 } else if (act === 'reset-hard') {
                     if (!confirm('⚠ HARD reset to ' + short + '?\n\nThis PERMANENTLY discards every commit after it AND all uncommitted changes. This cannot be undone.')) return;
-                    executeGitOperation('reset', { commitRef: h, resetMode: 'hard', safeMode: false }, function() {
-                        reloadFlowsFromDisk(function() { loadAll(); });
-                    });
+                    executeGitOperation('reset', { commitRef: h, resetMode: 'hard', safeMode: false }, afterPossibleConflict);
                 } else if (act === 'revert') {
                     if (!confirm('Create a new commit that undoes ' + short + '?\n\nHistory is preserved — a new commit reverses this one\'s changes.')) return;
                     executeGitOperation('revert', { commitRef: h }, afterPossibleConflict);
@@ -2308,19 +2994,21 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
 
                 var $wrap = $('<div class="git-flow-units">');
                 units.forEach(function(unit) {
-                    var $row = $('<div class="git-flow-unit git-flow-status-' + unit.status + '">');
+                    var $row = $('<div class="git-flow-unit git-flow-unit-clickable git-flow-status-' + unit.status + '" title="View changes">');
                     $row.html(
                         '<span class="git-flow-unit-status git-dot-' + flowUnitTone(unit) + '"></span>' +
                         '<span class="git-flow-unit-icon"><i class="fa ' + flowUnitIcon(unit.kind) + '"></i></span>' +
                         '<span class="git-flow-unit-label">' + escapeHtml(unit.label) + '</span>' +
                         '<span class="git-flow-unit-counts">' + flowUnitCounts(unit) + '</span>' +
-                        '<button class="git-flow-unit-btn git-flow-unit-diff" title="View changes"><i class="fa fa-eye"></i></button>' +
                         '<button class="git-flow-unit-btn git-flow-unit-revert" title="' + escapeAttr(revertTitle) + '"><i class="fa ' + revertIcon + '"></i></button>'
                     );
-                    $row.find('.git-flow-unit-diff').on('click', function() {
+                    // The row itself opens the diff; the revert button is a separate
+                    // action, so it must not also trigger the row click.
+                    $row.on('click', function() {
                         openUnitDiff(unit.id, unit.label, ctx);
                     });
-                    $row.find('.git-flow-unit-revert').on('click', function() {
+                    $row.find('.git-flow-unit-revert').on('click', function(e) {
+                        e.stopPropagation();
                         revertFlowUnit(unit.id, unit.label, ctx.revertRef, ctx.revertVerb);
                     });
                     $wrap.append($row);
@@ -2612,13 +3300,45 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
             }
 
             function handlePull() {
+                doPull(false);
+            }
+
+            // Pull never auto-merges. A fast-forward / up-to-date pull proceeds
+            // silently; a diverged branch comes back with needsMerge so we ask the
+            // user before creating a merge commit (re-pulling with allowMerge).
+            function doPull(allowMerge) {
                 setToolbarLoading('#git-btn-pull', true);
-                executeGitOperation('pull', {}, function(result) {
+                executeGitOperation('pull', { allowMerge: allowMerge }, function(result) {
                     setToolbarLoading('#git-btn-pull', false);
+
+                    if (result.needsMerge) {
+                        var msg = 'Your branch and its upstream have diverged:\n' +
+                            '  • ' + result.ahead + ' local commit(s) not on the remote\n' +
+                            '  • ' + result.behind + ' remote commit(s) not in your branch\n\n' +
+                            'Merge the remote commits into your branch? This creates a merge commit.\n\n' +
+                            'Cancel to leave your branch unchanged (the remote commits are already fetched).';
+                        if (confirm(msg)) {
+                            doPull(true);
+                        } else {
+                            RED.notify('Pull cancelled — remote changes fetched but not merged', "info");
+                            loadAll();
+                        }
+                        return;
+                    }
+
+                    if (result.upToDate) {
+                        RED.notify('Already up to date', "success");
+                        loadAll();
+                        return;
+                    }
+
+                    if (!result.conflicted) {
+                        RED.notify(result.merged ? 'Merged remote changes into your branch' : 'Pulled remote changes', "success");
+                    }
                     afterPossibleConflict(result);
                 }, function() {
                     setToolbarLoading('#git-btn-pull', false);
-                });
+                }, { quiet: true });
             }
 
             function handlePush() {
@@ -2637,8 +3357,13 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
 
                 // Normal push (commits in detached HEAD now create branches automatically)
                 setToolbarLoading('#git-btn-push', true);
-                executeGitOperation('push', {}, function() {
+                executeGitOperation('push', {}, function(result) {
                     setToolbarLoading('#git-btn-push', false);
+                    // First push of an untracked branch: push -u created the remote
+                    // branch and its upstream — make that explicit.
+                    if (result && result.setUpstream && result.upstream) {
+                        RED.notify("Created remote branch " + result.upstream + " and set it as upstream", "success");
+                    }
                     loadAll();
                 }, function(errMsg) {
                     setToolbarLoading('#git-btn-push', false);
@@ -2666,16 +3391,54 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 });
             }
 
-            function handleBranchSwitch() {
-                var branch = $('#git-branch-selector').val();
-                if (branch && branch !== currentBranch) {
-                    executeGitOperation('checkout', { commitRef: branch }, function() {
-                        currentBranch = branch;
-                        // Reload flows from disk after branch switch
-                        reloadFlowsFromDisk(function() {
+            // Called when a branch is picked in the combobox. Three cases:
+            //   - existing local      → checkout (switch).
+            //   - remote-only (cloud) → checkout, which DWIMs a local tracking
+            //                          branch (git creates feature off origin/feature).
+            //   - typed new name      → create-branch from current and check it out.
+            function switchToBranch(branch) {
+                if (!branch || branch === currentBranch) return;
+                var locals = (lastBranches && lastBranches.local) || [];
+                var isCreate = locals.indexOf(branch) === -1 && currentRemoteOnly.indexOf(branch) === -1;
+                if (isCreate) {
+                    executeGitOperation('create-branch', { name: branch, checkout: true }, afterPossibleConflict);
+                } else {
+                    // afterPossibleConflict only reloads the page when the branch's
+                    // flows.json actually differs; switching branches that share the
+                    // same flow file just refreshes the panels.
+                    executeGitOperation('checkout', { commitRef: branch }, afterPossibleConflict);
+                }
+            }
+
+            // Called when an entry is picked in the upstream combo. Existing remote
+            // → set-upstream. New name (not on the remote yet) → confirm + publish
+            // push, which creates origin/<name> and sets it as the upstream.
+            function handleUpstreamPick(upstream) {
+                if (!upstream || !currentBranch) return;
+                if (upstream === (lastBranches && lastBranches.tracking)) return; // no-op
+                var slash = upstream.indexOf('/');
+                if (slash < 1) { RED.notify('Upstream must be in the form <remote>/<branch>', 'warning'); return; }
+                var remote = upstream.substring(0, slash);
+                var remoteBranch = upstream.substring(slash + 1);
+                if (currentRemoteRefs.indexOf(upstream) !== -1) {
+                    executeGitOperation('set-upstream',
+                        { branch: currentBranch, remote: remote, remoteBranch: remoteBranch },
+                        function() { loadAll(); });
+                } else {
+                    if (!confirm('Create remote branch "' + upstream + '"?\n\nIt doesn\'t exist on the remote yet. "' + currentBranch + '" will be pushed there and set as its upstream.')) {
+                        // Revert the input so it doesn't sit on a value we didn't act on.
+                        if (upstreamCombo) upstreamCombo.setValue((lastBranches && lastBranches.tracking) || '');
+                        return;
+                    }
+                    RED.notify('Creating remote branch ' + upstream + '…');
+                    executeGitOperation('push',
+                        { targetRemote: remote, targetBranch: remoteBranch },
+                        function(r) {
+                            RED.notify('Created remote branch ' + (r.upstream || upstream) + ' and set upstream', 'success');
                             loadAll();
-                        });
-                    });
+                        },
+                        function() { if (upstreamCombo) upstreamCombo.setValue((lastBranches && lastBranches.tracking) || ''); },
+                        { quiet: true });
                 }
             }
 
@@ -2776,8 +3539,20 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     message += "\n\n" + errorInfo.suggestion;
                 }
 
-                // Display main error notification
-                RED.notify(message, "error");
+                // Surface the real git output too. The matched message/suggestion can
+                // be generic (or the fallback that unhelpfully says "check details
+                // above"), while the actual reason - remote rejection, server hook,
+                // etc. - lives in details. Show it (trimmed) instead of only logging it.
+                if (errorInfo.details && errorInfo.details !== errorInfo.error) {
+                    var details = String(errorInfo.details).trim();
+                    if (details) {
+                        if (details.length > 700) details = details.slice(0, 700) + '…';
+                        message += "\n\n— git said —\n" + details;
+                    }
+                }
+
+                // Display main error notification (longer timeout so it's readable)
+                RED.notify(message, { type: "error", timeout: 12000 });
 
                 // Log details to console for debugging
                 if (errorInfo.details) {
@@ -2785,7 +3560,7 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 }
             }
 
-            function executeGitOperation(operation, data, successCallback, errorCallback) {
+            function executeGitOperation(operation, data, successCallback, errorCallback, opts) {
                 data = data || {};
 
                 $.ajax({
@@ -2795,7 +3570,9 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                     contentType: 'application/json',
                     success: function(result) {
                         if (result.success) {
-                            RED.notify("Git " + operation + " completed", "success");
+                            // opts.quiet lets a caller craft its own messages (e.g. pull,
+                            // which distinguishes up-to-date / fast-forward / merge).
+                            if (!(opts && opts.quiet)) RED.notify("Git " + operation + " completed", "success");
                             if (successCallback) successCallback(result);
                         }
                     },

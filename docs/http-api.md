@@ -8,7 +8,7 @@ The plugin exposes Git control operations via HTTP Admin API endpoints. All rout
 - Read-only operations require the `git-control.read` permission; mutating
   operations require `git-control.write`. Note this is by *operation*, not HTTP
   verb — several read-only endpoints are `POST` (they take a JSON body) but still
-  only need `read` (e.g. `status`, `branches`, `show`, `flow-diff`, `file-diff`).
+  only need `read` (e.g. `status`, `branches`, `flow-diff`, `file-diff`).
 
 ### Calling the API as an agent / external tool
 
@@ -39,7 +39,7 @@ editor sessions). All POST bodies are JSON (`Content-Type: application/json`).
 
 | Level | Endpoints | Notes |
 |-------|-----------|-------|
-| safe (read-only) | `project-info`, `status`, `log`, `branches`, `show`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `ssh-keys` | never modify the repo |
+| safe (read-only) | `project-info`, `status`, `log`, `branches`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `commit-branches`, `ssh-keys` | never modify the repo |
 | writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `pull`, `merge`, `revert`, `cherry-pick`, `abort`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `ssh-key` | reversible via git |
 | destructive (needs `confirmed: true`) | `force-push`, `discard-all`, `delete-branch` *(when `force: true`)*, `reset` *(hard, when `safeMode: false`)* | can discard work / rewrite history |
 
@@ -210,26 +210,6 @@ Lists all local and unique remote branches.
 }
 ```
 
-#### `POST /rosepetal-git/show`
-Shows detailed commit information and diff.
-
-**Request**
-```json
-{
-  "commitRef": "abc123"
-}
-```
-
-**Response 200**
-```json
-{
-  "success": true,
-  "operation": "show",
-  "commit": "abc123",
-  "details": "commit abc123...\nAuthor: ...\nDate: ...\n\ndiff --git..."
-}
-```
-
 ### Branch Operations
 
 #### `POST /rosepetal-git/checkout`
@@ -248,11 +228,14 @@ Checks out a commit or branch.
   "success": true,
   "operation": "checkout",
   "ref": "main",
+  "flowFileChanged": true,
   "result": "..."
 }
 ```
 
-**Important**: After checkout, the frontend must reload flows from disk to prevent data loss.
+- `flowFileChanged`: whether the on-disk flow file actually changed. The editor
+  only needs to reload flows from disk (and restart) when this is `true`; a
+  checkout that doesn't touch the flow file requires no resync.
 
 #### `POST /rosepetal-git/validate-checkout`
 Validates whether a checkout is safe. The only blocker is **uncommitted working
@@ -375,9 +358,14 @@ Resets to a specific commit (soft/mixed/hard).
   "operation": "reset",
   "mode": "mixed",
   "commit": "HEAD~1",
+  "flowFileChanged": false,
   "result": "..."
 }
 ```
+
+- `flowFileChanged`: whether the on-disk flow file changed (and thus whether the
+  editor must resync). A `mixed`/`soft` reset never rewrites the working tree, so
+  this is always `false` for them; only a `hard` reset can flip it to `true`.
 
 **Error 500** (when safeMode blocks hard reset)
 ```json
@@ -422,50 +410,81 @@ Fetches updates from remote without merging.
 ```
 
 #### `POST /rosepetal-git/pull`
-Pulls changes from remote and merges.
+Fetches the upstream and integrates it, but **never auto-merges**. It fast-forwards
+when possible; if the branch has diverged (a merge commit would be required) it
+stops and reports `needsMerge` instead — call again with `allowMerge: true` to
+perform the merge (`--no-edit`, so it never blocks on an editor).
 
-**Response 200**
+**Request**
 ```json
-{
-  "success": true,
-  "operation": "pull",
-  "result": {
-    "files": ["flows.json"],
-    "insertions": 10,
-    "deletions": 5,
-    "summary": {
-      "changes": 1
-    }
-  }
-}
+{ "allowMerge": false }
+```
+- `allowMerge` (default `false`): permit creating a merge commit when the branch
+  has diverged. Has no effect on a fast-forward or no-op pull.
+
+**Response 200** — varies by outcome (all share `success`/`operation`):
+
+Up to date (nothing behind the upstream):
+```json
+{ "success": true, "operation": "pull", "upToDate": true, "changed": false, "flowFileChanged": false, "conflicted": false, "conflictedFiles": [] }
+```
+Diverged, merge not yet confirmed (the fetch already ran):
+```json
+{ "success": true, "operation": "pull", "needsMerge": true, "ahead": 2, "behind": 3, "changed": false, "flowFileChanged": false, "conflicted": false, "conflictedFiles": [] }
+```
+Fast-forward, or a confirmed merge (`merged: true` only for the merge case):
+```json
+{ "success": true, "operation": "pull", "merged": false, "conflicted": false, "conflictedFiles": [], "changed": true, "flowFileChanged": true, "result": "..." }
 ```
 
-**Important**: After pull, the frontend must reload flows from disk.
+- `needsMerge`: the branch diverged and `allowMerge` was not set — nothing was
+  merged; re-call with `allowMerge: true` to proceed.
+- `changed`: whether `HEAD` moved. `flowFileChanged`: whether the flow file
+  changed — the editor resyncs from disk only when `true` and there's no conflict.
+- `conflicted` / `conflictedFiles`: a confirmed merge can still conflict — see the
+  conflict note under `merge`.
+- Upstream defaults to the **same-named** remote branch: if the branch has no
+  upstream but `origin/<branch>` exists, pull links to it automatically. If no
+  such remote branch exists, it errors asking you to push the branch first.
 
 #### `POST /rosepetal-git/push`
-Pushes commits to remote. Automatically sets upstream tracking for new branches.
+Pushes the current branch's commits to the remote.
 
-**Response 200**
+When the branch already has an upstream, this is a plain `git push`:
 ```json
 {
   "success": true,
   "operation": "push",
-  "result": "...",
   "branch": "main",
-  "setUpstream": false
+  "setUpstream": false,
+  "upstream": "origin/main"
 }
 ```
 
-When pushing a new branch:
+When the branch has **no upstream yet** (its remote branch doesn't exist), it
+runs `git push -u <remote> <branch>`, which **creates** the remote branch and
+sets it as the tracking upstream:
 ```json
 {
   "success": true,
   "operation": "push",
-  "result": "...",
   "branch": "feature-branch",
-  "setUpstream": true
+  "setUpstream": true,
+  "upstream": "origin/feature-branch"
 }
 ```
+- `setUpstream`: whether this push created the upstream link.
+- `upstream`: the tracking ref (after the push). `null` only if the branch
+  somehow still has no upstream.
+
+**Optional request body** — publish to an explicit remote branch (creates it if
+missing and sets it as upstream, overriding any prior one). Used by the tracking
+picker's "create `origin/<name>`" option:
+```json
+{ "targetRemote": "origin", "targetBranch": "feature-branch" }
+```
+This runs `git push -u <targetRemote> HEAD:<targetBranch>`, so it works even when
+the branch currently tracks a differently-named upstream.
 
 #### `POST /rosepetal-git/force-push`
 Force pushes with `--force-with-lease` (requires confirmation).
@@ -513,8 +532,11 @@ Create a branch, optionally checking it out.
 
 **Response 200**
 ```json
-{ "success": true, "operation": "create-branch", "branch": "feature/x", "checkedOut": true, "startPoint": "main" }
+{ "success": true, "operation": "create-branch", "branch": "feature/x", "checkedOut": true, "startPoint": "main", "flowFileChanged": false }
 ```
+- `flowFileChanged`: when `checkout` is true and `startPoint` is an earlier
+  commit, the working tree is rewritten; this reports whether the flow file
+  actually changed (so the editor only resyncs when needed).
 
 #### `POST /rosepetal-git/orphan-branch`
 Create a branch with **no history** (`git checkout --orphan`). With
@@ -565,11 +587,21 @@ Merge a ref into the current branch. `noFastForward: true` forces a merge commit
 { "ref": "feature/x", "noFastForward": false }
 ```
 
+**Response 200**
+```json
+{ "success": true, "operation": "merge", "ref": "feature/x", "conflicted": false, "conflictedFiles": [], "flowFileChanged": true, "result": "..." }
+```
+
 > `merge`, `pull`, `revert`, and `cherry-pick` can leave the repo mid-operation
 > on a conflict. Instead of throwing, they return `200` with
 > `"conflicted": true` and `"conflictedFiles": [...]`. The flow file then contains
 > conflict markers (invalid JSON) — do **not** redeploy from it. Resolve the files
 > and commit, or call `POST /rosepetal-git/abort` to undo the operation.
+>
+> `merge`, `pull`, and `revert` also return `flowFileChanged` (see `checkout`):
+> the editor only needs to resync from disk when it is `true` and there is no
+> conflict. Merges/pulls run headless (`--no-edit`), so a merge commit never
+> blocks on an editor.
 
 #### `POST /rosepetal-git/revert`
 Create a new commit that undoes a previous commit (`git revert`, history-safe).
@@ -642,6 +674,21 @@ lists all files as additions).
 **Response 200**
 ```json
 { "success": true, "operation": "commit-diff", "commit": "abc123", "files": [ { "status": "M", "path": "flows.json" } ] }
+```
+
+#### `POST /rosepetal-git/commit-branches`
+List the branches that **contain** a commit (answers "what branch is this commit
+on?"). Local and remote are returned separately; `origin/HEAD` and the
+detached-HEAD marker are filtered out.
+
+**Request**
+```json
+{ "commitRef": "abc123" }
+```
+
+**Response 200**
+```json
+{ "success": true, "operation": "commit-branches", "commit": "abc123", "branches": ["main", "feature/x"], "remoteBranches": ["origin/main"], "current": "main" }
 ```
 
 ### Flow-Aware Operations
