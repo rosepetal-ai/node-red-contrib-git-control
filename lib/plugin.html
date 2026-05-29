@@ -3669,20 +3669,23 @@ body.red-ui-theme-midnight .git-diff-line.dl-hunk { background: #2a2a2a; color: 
                 }
             }
 
-            // Follow-up for merge-like ops (pull / revert / cherry-pick) that may
-            // leave conflicts. Three outcomes:
+            // Follow-up for ops that move HEAD or merge (checkout / branch switch /
+            // reset / revert / merge / pull). Two outcomes:
             //   - conflicted: flow file has conflict markers (invalid JSON) - do NOT
             //     reload from it; just refresh state so the banner shows.
-            //   - changed nothing relevant (result.flowFileChanged === false, e.g. a
-            //     no-op "already up to date" pull): refresh the panels only, no
-            //     Node-RED restart / page reload.
-            //   - otherwise: reload flows from disk (restart) to resync the editor.
+            //   - otherwise: always reload flows from disk (restart) to resync the
+            //     editor. This mirrors Node-RED's own Projects feature, whose
+            //     setBranch() calls reloadActiveProject() -> loadFlows(true) after
+            //     every branch switch, unconditionally. We deliberately do NOT gate
+            //     on result.flowFileChanged: that hash check produced false negatives
+            //     (e.g. when the active flow file path didn't resolve under a
+            //     project), leaving the editor on stale flows after a good checkout.
+            //     No-op cases that shouldn't reload (e.g. "already up to date" pull)
+            //     are short-circuited by their callers before reaching here.
             function afterPossibleConflict(result) {
                 if (result && result.conflicted) {
                     var n = (result.conflictedFiles || []).length;
                     RED.notify((n || 'Some') + ' file(s) conflicted — resolve them or use Abort on the banner.', "warning");
-                    loadAll();
-                } else if (result && result.flowFileChanged === false) {
                     loadAll();
                 } else {
                     reloadFlowsFromDisk(function() { loadAll(); });
