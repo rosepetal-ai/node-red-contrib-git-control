@@ -191,7 +191,8 @@ Returns working tree status with file changes.
 ```
 
 #### `POST /rosepetal-git/branches`
-Lists all local and unique remote branches.
+Lists all local and unique remote branches, the remotes, and for every local
+branch its upstream and how far it is from it (as of the last fetch).
 
 **Response 200**
 ```json
@@ -200,6 +201,12 @@ Lists all local and unique remote branches.
   "operation": "branches",
   "current": "main",
   "all": ["main", "develop", "feature-branch"],
+  "remotes": ["origin"],
+  "upstreams": {
+    "main": { "upstream": "origin/main", "ahead": 1, "behind": 0, "gone": false },
+    "develop": { "upstream": "origin/develop", "ahead": 0, "behind": 3, "gone": false },
+    "feature-branch": { "upstream": null, "ahead": 0, "behind": 0, "gone": false }
+  },
   "branches": {
     "main": {
       "current": true,
