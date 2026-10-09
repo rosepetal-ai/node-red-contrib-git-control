@@ -54,19 +54,20 @@ jobs:
 
       # Confirm the package actually landed on the registry. Catches the silent
       # case where `npm publish` exits 0 but nothing reaches npm (registry
-      # propagation, scoped-package auth quirks, empty tarball). Retries because
-      # the registry can take a few seconds to expose a fresh version.
+      # propagation, scoped-package auth quirks, empty tarball). Retries for up
+      # to ~5 minutes: npm now answers "Your package is being processed and may
+      # take a few minutes to become available" (v1.1.0 took about a minute).
       - name: Verify package is published
         run: |
           NAME="$(node -p "require('./package.json').name")"
           VERSION="$(node -p "require('./package.json').version")"
-          for attempt in 1 2 3 4 5; do
+          for attempt in $(seq 1 20); do
             if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
               echo "Confirmed $NAME@$VERSION is live on npm."
               exit 0
             fi
             echo "Attempt $attempt: $NAME@$VERSION not visible yet, retrying..."
-            sleep 6
+            sleep 15
           done
           echo "Publish reported success but $NAME@$VERSION is not visible on npm." >&2
           exit 1
