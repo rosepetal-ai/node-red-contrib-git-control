@@ -4,15 +4,24 @@ A Node-RED sidebar plugin for Git version control. Manage commits, branches, mer
 
 ![Example](assets/example.png)
 
+## Documentation
+
+| Page | Contents |
+|------|----------|
+| [Overview](docs/index.md) | Installation, requirements, the sidebar tab, and the flow-aware diff, revert and merge |
+| [HTTP API](docs/http-api.md) | Reference of the admin endpoints: authentication, permissions, requests and responses |
+
+The same pages are published at <https://docs.rosepetal.ai/flows/node-red-contrib-git-control>.
+
 ## Why you might want it
 
 - **Flow-aware merge resolver**: When a merge conflicts on `flows.json`, the plugin decomposes it into per-tab / per-node 3-way diffs. Take ours, take theirs, or hand-pick per node — no manual JSON surgery.
 - **Flow-aware diff & revert**: Diff a single tab or subflow against any commit, and revert one tab (or a specific node) without touching the rest of the flow file.
-- **Visual commit graph**: Branch labels, push status, and parent relationships on a canvas-based timeline.
+- **Visual commit graph**: Branch labels, push status, and parent relationships on a timeline.
 - **Detached HEAD safety**: Auto-branches when committing from historical states to prevent orphaned commits.
 - **Flow synchronization**: Reloads flows after checkout, reset, pull, or merge so the editor stays in sync with disk.
 - **Conflict / interrupted-op safety net**: A persistent banner appears whenever the repo is mid-merge, mid-cherry-pick, mid-revert, or mid-rebase, with one-click Resolve and Abort actions.
-- **Smart error messages**: Context-aware suggestions guide you through divergence, lock issues, missing upstreams, etc.
+- **Smart error messages**: Context-aware suggestions guide you through divergence, authentication failures, missing upstreams, etc.
 - **Integrated workflow**: Uses Node-RED's project system and SSH keys — no separate Git configuration needed.
 
 ## Quick start
@@ -41,7 +50,7 @@ Sync indicators show how many commits you are ahead/behind the remote.
 
 ### Branch picker
 Pick a branch from the combo, or open the branch action menu (the icon next to the combo) for:
-- **Create branch** (from current or any commit)
+- **Create branch** from the current one (to start one at any commit, use **Branch here** on that commit)
 - **Create orphan branch**
 - **Merge branch into current** (flow-aware resolver kicks in if `flows.json` conflicts)
 - **Rename branch**
@@ -50,34 +59,33 @@ Pick a branch from the combo, or open the branch action menu (the icon next to t
 Remote-only branches (not yet checked out locally) appear alongside local branches.
 
 ### Changes panel
-- **Unstaged**: modified, created, or deleted files not yet staged
-- **Staged**: files ready to commit
+A single list of the modified, created, or deleted files. There is no staging step: **Commit** stages everything. Under `flows.json`, the changed tabs / subflows are listed one by one.
 
-Use **+** to stage individual files or stage all at once, **−** to unstage. The trash icon on unstaged files discards changes (⚠️ irreversible).
+The trash icon on a file discards its changes (⚠️ irreversible).
 
 ### Commit panel
-With staged changes: enter a message and click **Commit**. If you're in detached HEAD (viewing an old commit), the plugin creates a new branch automatically (named `from-<hash>`) to preserve your work.
+When there are changes: enter a message and click **Commit**. If you're in detached HEAD (viewing an old commit), the plugin creates a new branch automatically (named `from-<hash>`) to preserve your work.
 
 ### Commit graph
 Visual timeline:
 - **Blue nodes**: commits already pushed to remote
 - **Purple nodes**: local commits not yet pushed
-- **Green center**: current HEAD
+- **Green ring**: current HEAD
 - **Branch labels**: which branches point to each commit
 
-Click any commit to open an actions modal: switch to commit, diff against working tree, see which branches contain it. Hover for hash + message.
+Click any commit to expand its details: the branches that contain it, the flows and files it changed, and its actions (checkout, branch here, reset, revert).
 
 ### Flow-aware diff & revert
-From any commit's modal, open the diff against the current working tree. The diff is grouped by tab / subflow — each conflicting node is shown in isolation with its base, ours, and theirs versions. From there you can:
-- **Revert a whole tab** to the chosen commit's version
+The Changes panel (working tree vs the last commit) and a commit's details (the commit vs its parent) show the diff grouped by tab / subflow — each changed node is shown in isolation with its fields before and after. From there you can:
+- **Revert a whole tab** to the last commit's version, or restore it from the chosen commit
 - **Revert a single node** without disturbing the rest of `flows.json`
 
 ### Merge conflict resolver
-When a pull or merge produces a conflict in `flows.json`, the conflict-safety banner exposes a **Resolve** button that opens a full-screen 3-way diff modal:
+When a pull or merge produces a conflict in `flows.json`, the conflict-safety banner exposes a **Resolve** button that opens a 3-way diff modal:
 
 - **Bulk choice**: "Take ours for all" / "Take theirs for all" (global, wins over per-tab and per-node choices)
 - **Per-tab choice**: "Take ours" / "Take theirs" for an entire tab/subflow
-- **Per-node choice**: pick base/ours/theirs for individual nodes, with field-level diffs for long values
+- **Per-node choice**: pick ours/theirs for individual nodes, with field-level diffs for long values
 - **Commit message**: pre-filled from `.git/MERGE_MSG`, editable
 
 The resolver is also fully driveable from outside the UI — see [`docs/http-api.md`](docs/http-api.md) for the `merge/preview` and `merge/resolve` endpoints.

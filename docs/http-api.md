@@ -1,3 +1,19 @@
+---
+title: "HTTP API Reference - Git Control for Node-RED"
+description: "Admin HTTP endpoints of the Git Control plugin for Node-RED: authentication, permissions, and the request and response of every Git and flow-aware operation under /rosepetal-git. Part of @rosepetal/node-red-contrib-git-control."
+sidebar_label: "HTTP API"
+head:
+  - - meta
+    - name: "keywords"
+      content: "node-red, git, http api, admin api, rosepetal-git, flows.json, flow diff, merge conflict, version control, rosepetal"
+  - - meta
+    - property: "og:title"
+      content: "HTTP API Reference - @rosepetal/node-red-contrib-git-control"
+  - - meta
+    - property: "og:description"
+      content: "Admin HTTP endpoints of the Git Control plugin for Node-RED: authentication, permissions, and the request and response of every operation."
+---
+
 # HTTP API Reference
 
 The plugin exposes Git control operations via HTTP Admin API endpoints. All routes live on the Node-RED admin server (usually `http://localhost:1880`) under the base path `/rosepetal-git`.
@@ -9,6 +25,8 @@ The plugin exposes Git control operations via HTTP Admin API endpoints. All rout
   operations require `git-control.write`. Note this is by *operation*, not HTTP
   verb — several read-only endpoints are `POST` (they take a JSON body) but still
   only need `read` (e.g. `status`, `branches`, `flow-diff`, `file-diff`).
+- One exception: `log` only reads the history, but its route is registered with
+  `git-control.write`.
 
 ### Calling the API as an agent / external tool
 
@@ -39,9 +57,9 @@ editor sessions). All POST bodies are JSON (`Content-Type: application/json`).
 
 | Level | Endpoints | Notes |
 |-------|-----------|-------|
-| safe (read-only) | `project-info`, `status`, `log`, `branches`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `commit-branches`, `ssh-keys` | never modify the repo |
-| writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `pull`, `merge`, `revert`, `cherry-pick`, `abort`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `ssh-key` | reversible via git |
-| destructive (needs `confirmed: true`) | `force-push`, `discard-all`, `delete-branch` *(when `force: true`)*, `reset` *(hard, when `safeMode: false`)* | can discard work / rewrite history |
+| safe (read-only) | `project-info`, `status`, `log`, `branches`, `validate-checkout`, `flow-units`, `flow-diff`, `file-diff`, `commit-diff`, `commit-branches`, `merge/preview`, `ssh-keys` | never modify the repo |
+| writes working tree / history | `add`, `unstage`, `commit`, `checkout`, `fetch`, `pull`, `push`, `merge`, `merge/resolve`, `revert`, `cherry-pick`, `abort`, `create-branch`, `orphan-branch`, `rename-branch`, `set-upstream`, `revert-flow-unit`, `revert-flow-nodes`, `ssh-key` | reversible via git |
+| destructive (needs `confirmed: true`) | `force-push`, `discard-all`, `delete-branch` *(when `force: true`)*, `reset` *(hard, when `safeMode: false`)*, `discard` *(no confirmation flag)* | can discard work / rewrite history |
 
 All responses are JSON. Errors return:
 ```json
@@ -101,6 +119,7 @@ Returns metadata about the active Node-RED project and its Git state.
     "name": "John Doe",
     "email": "john@example.com"
   },
+  "flowFile": "flows.json",
   "sshKeyConfigured": true,
   "tracking": "origin/main",
   "ahead": 2,
@@ -113,9 +132,13 @@ Returns metadata about the active Node-RED project and its Git state.
 }
 ```
 
+- `flowFile`: the project's flow file, relative to the repository root.
 - `conflicted`: paths with unresolved merge conflicts (empty when clean).
 - `diverged`: `true` when the branch is both ahead of and behind its remote (a plain push will be rejected — pull first, or `force-push`).
 - `mergeState.inProgress` / `kind`: a `merge` / `cherry-pick` / `revert` / `rebase` left mid-flight (usually by a conflict). `kind` is also the subcommand `/abort` uses. See `POST /rosepetal-git/abort`.
+
+With no active project, or when the active project is not a Git repository, the
+response is still `200`, with `"success": false` and an `error` message.
 
 ### Repository Operations
 
@@ -131,6 +154,7 @@ Fetches commit history with metadata for graph visualization.
   "to": "commit-hash"     // Optional
 }
 ```
+`maxCount` defaults to 20.
 
 **Response 200**
 ```json
@@ -142,7 +166,7 @@ Fetches commit history with metadata for graph visualization.
     {
       "hash": "abc123def456...",
       "parents": ["parent-hash-1", "parent-hash-2"],
-      "date": "2025-01-14T10:30:00Z",
+      "date": "2025-01-14 10:30:00 +0100",
       "message": "Commit message",
       "author": "John Doe",
       "email": "john@example.com",
@@ -200,7 +224,11 @@ branch its upstream and how far it is from it (as of the last fetch).
   "success": true,
   "operation": "branches",
   "current": "main",
-  "all": ["main", "develop", "feature-branch"],
+  "tracking": "origin/main",
+  "all": ["main", "develop", "feature-branch", "hotfix"],
+  "local": ["main", "develop", "feature-branch"],
+  "remoteOnly": ["hotfix"],
+  "remoteBranches": ["origin/main", "origin/develop", "origin/hotfix"],
   "remotes": ["origin"],
   "upstreams": {
     "main": { "upstream": "origin/main", "ahead": 1, "behind": 0, "gone": false },
@@ -216,6 +244,11 @@ branch its upstream and how far it is from it (as of the last fetch).
   }
 }
 ```
+
+- `tracking`: the upstream of the current branch, or `null`.
+- `local`: the local branches. `remoteOnly`: the branches of `origin` that have no
+  local branch of the same name. `all` is both lists together.
+- `remoteBranches`: every remote branch as `<remote>/<branch>` (without the `HEAD` alias).
 
 ### Branch Operations
 
@@ -378,7 +411,9 @@ Resets to a specific commit (soft/mixed/hard).
 ```json
 {
   "success": false,
-  "error": "Hard reset is disabled in safe mode"
+  "error": "Git reset failed",
+  "details": "Hard reset is disabled in safe mode",
+  "suggestion": "Check the error details above. If the issue persists, try running the operation from the command line for more information."
 }
 ```
 
@@ -398,21 +433,24 @@ Discards uncommitted changes to specific files.
   "success": true,
   "operation": "discard",
   "files": ["flows.json", "package.json"],
-  "result": "..."
+  "restored": ["flows.json", "package.json"],
+  "removed": []
 }
 ```
+
+- `restored`: tracked files, reset with `git checkout --`.
+- `removed`: untracked files, deleted with `git clean -fd` (ignored files are never touched).
 
 ### Remote Operations
 
 #### `POST /rosepetal-git/fetch`
-Fetches updates from remote without merging.
+Fetches updates from remote without merging (`git fetch --prune`).
 
 **Response 200**
 ```json
 {
   "success": true,
-  "operation": "fetch",
-  "result": "..."
+  "operation": "fetch"
 }
 ```
 
@@ -457,7 +495,9 @@ Fast-forward, or a confirmed merge (`merged: true` only for the merge case):
 #### `POST /rosepetal-git/push`
 Pushes the current branch's commits to the remote.
 
-When the branch already has an upstream, this is a plain `git push`:
+When the branch already has an upstream, it pushes to that upstream
+(`git push <remote> HEAD:<upstream-branch>`, so it also works when the local and
+upstream branch names differ):
 ```json
 {
   "success": true,
@@ -494,7 +534,8 @@ This runs `git push -u <targetRemote> HEAD:<targetBranch>`, so it works even whe
 the branch currently tracks a differently-named upstream.
 
 #### `POST /rosepetal-git/force-push`
-Force pushes with `--force-with-lease` (requires confirmation).
+Force pushes with `--force-with-lease` (requires confirmation). It pushes to the
+branch's upstream and errors when the branch has none.
 
 **Request**
 ```json
@@ -517,7 +558,7 @@ Force pushes with `--force-with-lease` (requires confirmation).
 {
   "success": true,
   "operation": "force-push",
-  "result": "...",
+  "branch": "main",
   "warning": "Force push completed - Git history has been rewritten"
 }
 ```
@@ -603,7 +644,9 @@ Merge a ref into the current branch. `noFastForward: true` forces a merge commit
 > on a conflict. Instead of throwing, they return `200` with
 > `"conflicted": true` and `"conflictedFiles": [...]`. The flow file then contains
 > conflict markers (invalid JSON) — do **not** redeploy from it. Resolve the files
-> and commit, or call `POST /rosepetal-git/abort` to undo the operation.
+> and commit, or call `POST /rosepetal-git/abort` to undo the operation. For a
+> merge whose only conflicted file is the flow file, `merge/preview` and
+> `merge/resolve` (below) resolve it node by node.
 >
 > `merge`, `pull`, and `revert` also return `flowFileChanged` (see `checkout`):
 > the editor only needs to resync from disk when it is `true` and there is no
@@ -631,7 +674,7 @@ May report a conflict (see note above).
 #### `POST /rosepetal-git/abort`
 Abort whatever operation is in progress (`merge` / `cherry-pick` / `revert` /
 `rebase` — see `mergeState` in `project-info`), returning the repo to its
-pre-operation state. Errors with `400` if nothing is in progress.
+pre-operation state. Errors with `500` if nothing is in progress.
 
 **Request**
 ```json
@@ -835,6 +878,182 @@ Like a flow revert, this can leave a dangling wire/config reference if you rever
 a node but not what it points to; `dependencies` reports referenced config/subflow
 units. Reload flows from disk afterward.
 
+### Flow-Aware Conflict Resolution
+
+When a merge (or a pull that merges) stops on a conflict in the flow file, these
+two endpoints resolve it by node instead of by text line. The three sides of the
+conflict are **base** (the common ancestor), **ours** (the current branch) and
+**theirs** (the branch being merged). They are merged by node id inside each unit
+(see Flow-Aware Operations above): a node changed on one side only, or changed
+identically on both, is merged automatically; a node changed differently on both
+sides, or changed on one and deleted on the other, is a conflict that needs a
+choice.
+
+#### `POST /rosepetal-git/merge/preview`
+Report what the flow-aware merge can do with the operation in progress. Writes
+nothing, and needs only `git-control.read`.
+
+**Request**
+```json
+{}
+```
+
+**Response 200** (the flow file is conflicted)
+```json
+{
+  "success": true,
+  "operation": "merge-preview",
+  "kind": "merge",
+  "flowFileMergeable": true,
+  "autoMerged": 1,
+  "conflicts": [
+    {
+      "unitId": "a1b2c3d4",
+      "kind": "flow",
+      "label": "Main",
+      "unitConflict": null,
+      "perNode": [
+        {
+          "id": "n1",
+          "kind": "inject",
+          "base":   { "id": "n1", "type": "inject", "z": "a1b2c3d4", "name": "tick" },
+          "ours":   { "id": "n1", "type": "inject", "z": "a1b2c3d4", "name": "tick-ours" },
+          "theirs": { "id": "n1", "type": "inject", "z": "a1b2c3d4", "name": "tick-theirs" }
+        }
+      ]
+    }
+  ],
+  "otherFiles": [],
+  "oursRef": "main",
+  "theirsRef": "feature/x",
+  "oursCommit":   { "hash": "0fce908...", "shortHash": "0fce908", "message": "Rename tick", "author": "John Doe", "when": "2025-01-14 10:30:00 +0100" },
+  "theirsCommit": { "hash": "7dcabc4...", "shortHash": "7dcabc4", "message": "Rename tick too", "author": "Jane Doe", "when": "2025-01-14 09:12:00 +0100" },
+  "mergeBase": { "hash": "362a029...", "shortHash": "362a029" },
+  "mergeMessage": "Merge branch 'feature/x'\n\n# Conflicts:\n#\tflows.json\n"
+}
+```
+
+- `kind`: the operation in progress (`merge`, `cherry-pick`, `revert` or `rebase`).
+- `autoMerged`: how many node changes were merged without a choice.
+- `conflicts`: one entry per unit that needs a choice. `perNode` lists the
+  conflicting nodes with their three versions (the node's `kind` is its type); a
+  version is `null` where the node does not exist on that side.
+- `unitConflict`: `null` when the conflicts are per node. `"modify-delete"` when
+  one side deleted the whole unit and the other changed it (`deletedSide` says
+  which: `"ours"` or `"theirs"`), and `"add-add-different"` when both sides added
+  the unit with different content. `perNode` is empty for these two; they take a
+  `byUnit` choice.
+- `otherFiles`: conflicted files other than the flow file. These endpoints do not
+  resolve them.
+- `oursRef` / `theirsRef`, `oursCommit` / `theirsCommit`, `mergeBase`: the two
+  branches, their tip commits and the common ancestor. Each is `null` when it
+  cannot be read.
+- `mergeMessage`: the message Git prepared in `.git/MERGE_MSG`, or `null`.
+
+When the flow file is not among the conflicted files:
+```json
+{ "success": true, "operation": "merge-preview", "kind": "merge", "flowFileMergeable": false, "reason": "flow file is not conflicted", "conflicts": [], "autoMerged": 0, "otherFiles": ["notes.txt"] }
+```
+
+Errors with `500` if no operation is in progress.
+
+#### `POST /rosepetal-git/merge/resolve`
+Apply the choices, write the merged flow file, stage it and create the merge
+commit. Works on an in-progress `merge` only, not on a cherry-pick, revert or
+rebase.
+
+**Request**
+```json
+{
+  "choices": {
+    "byNode": { "n1": "theirs" },
+    "byUnit": { "a1b2c3d4": "ours" }
+  },
+  "fallback": "auto",
+  "commitMessage": "Merge branch 'feature/x'"
+}
+```
+
+- `choices.byNode`: `"ours"` or `"theirs"` for the id of a node in `perNode`.
+- `choices.byUnit`: `"ours"` or `"theirs"` for a `unitId`. It resolves a
+  `unitConflict`, and every node conflict of that unit that has no `byNode` choice.
+- `fallback`: `"ours"` or `"theirs"` takes that side for **every** conflict and
+  overrides `byNode` and `byUnit`. Any other value (default `"auto"`) resolves
+  nothing by itself.
+- `commitMessage` (optional): defaults to the message in `.git/MERGE_MSG`.
+- Choosing the side that deleted a node or a unit drops it.
+
+**Response 200**
+```json
+{ "success": true, "operation": "merge-resolve", "commit": "abc123...", "summary": { "changes": 0, "insertions": 0, "deletions": 0 }, "autoMerged": 1, "flowFileChanged": true }
+```
+
+**Error 409** (a conflict has no choice; `conflicts` has the shape of `merge/preview`)
+```json
+{
+  "success": false,
+  "error": "Unresolved conflicts remain",
+  "details": "Provide a choice for each flagged node/unit, or set fallback to \"ours\" or \"theirs\".",
+  "conflicts": [ { "unitId": "a1b2c3d4", "kind": "flow", "label": "Main", "unitConflict": null, "perNode": [ ... ] } ]
+}
+```
+
+**Error 409** (another file is still conflicted)
+```json
+{
+  "success": false,
+  "error": "Other files still have conflicts",
+  "details": "The flow file resolver can only complete a merge when flows.json is the only conflicted file.",
+  "files": ["notes.txt"]
+}
+```
+
+Errors with `500` if no operation is in progress, or if the operation in progress
+is not a merge.
+
+> Call `merge/resolve` only after `merge/preview` returned
+> `"flowFileMergeable": true`. The endpoint does not check it: called during a
+> merge in which the flow file is not conflicted (and no other file is), it writes
+> an empty flow file (`[]`) and commits it.
+
+### SSH Keys
+
+Network operations use one of Node-RED's project SSH keys (see SSH Key
+Configuration below). These two endpoints show and set which one.
+
+#### `GET /rosepetal-git/ssh-keys`
+List the available keys and the one used for the active project.
+
+**Response 200**
+```json
+{ "success": true, "keys": ["__default_my-project", "deploy"], "selected": null, "effective": "__default_my-project" }
+```
+
+- `keys`: the private keys in the keys directory that have a matching `.pub` file.
+- `selected`: the key selected for the project with `ssh-key`, or `null`.
+- `effective`: the key that network operations will use, or `null` when none
+  applies.
+
+#### `POST /rosepetal-git/ssh-key`
+Select the key of the project. The choice is saved per repository path in
+`git-control.json`, in the Node-RED user directory. An empty or omitted `keyName`
+clears the selection.
+
+**Request**
+```json
+{ "keyName": "deploy" }
+```
+
+**Response 200**
+```json
+{ "success": true, "selected": "deploy" }
+```
+
+**Error 400** (the name is not in `keys`)
+```json
+{ "success": false, "error": "Unknown SSH key: other-key" }
+```
+
 ## Error Handling
 
 The plugin provides context-aware error messages with actionable suggestions:
@@ -885,4 +1104,4 @@ This prevents editor state from diverging from disk state.
 When committing in detached HEAD state, the endpoint automatically creates a new branch named `from-<hash>` to prevent orphaned commits.
 
 ### SSH Key Configuration
-The plugin uses Node-RED's project SSH keys (in `~/.node-red/projects/.sshkeys/`) rather than the user's `~/.ssh` keys. The key is resolved per project: an explicit selection, else a key whose name matches the project, else the only key present.
+The plugin uses Node-RED's project SSH keys (in `~/.node-red/projects/.sshkeys/`) rather than the user's `~/.ssh` keys. The key is resolved per project: an explicit selection (`POST /rosepetal-git/ssh-key`), else a key whose name matches the project, else the only key present.
