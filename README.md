@@ -20,7 +20,7 @@ The same pages are published at <https://docs.rosepetal.ai/flows/node-red-contri
 - **Visual commit graph**: Branch labels, push status, and parent relationships on a timeline.
 - **Detached HEAD safety**: Auto-branches when committing from historical states to prevent orphaned commits.
 - **Flow synchronization**: Reloads flows after checkout, reset, pull, or merge so the editor stays in sync with disk.
-- **Conflict / interrupted-op safety net**: A persistent banner appears whenever the repo is mid-merge, mid-cherry-pick, mid-revert, or mid-rebase, with one-click Resolve and Abort actions.
+- **Conflict / interrupted-op safety net**: A persistent banner appears whenever the repo is mid-merge, mid-cherry-pick, mid-revert, or mid-rebase, with an Abort action and, for a merge that conflicts only on `flows.json`, a Resolve action.
 - **Smart error messages**: Context-aware suggestions guide you through divergence, authentication failures, missing upstreams, etc.
 - **Integrated workflow**: Uses Node-RED's project system and SSH keys — no separate Git configuration needed.
 
@@ -81,7 +81,7 @@ The Changes panel (working tree vs the last commit) and a commit's details (the 
 - **Revert a single node** without disturbing the rest of `flows.json`
 
 ### Merge conflict resolver
-When a pull or merge produces a conflict in `flows.json`, the conflict-safety banner exposes a **Resolve** button that opens a 3-way diff modal:
+When a pull or merge produces a conflict in `flows.json` and in no other file, the conflict-safety banner exposes a **Resolve** button that opens a 3-way diff modal:
 
 - **Bulk choice**: "Take ours for all" / "Take theirs for all" (global, wins over per-tab and per-node choices)
 - **Per-tab choice**: "Take ours" / "Take theirs" for an entire tab/subflow
